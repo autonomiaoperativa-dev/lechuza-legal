@@ -32,7 +32,7 @@ export function ddmmaa(iso) {
   const [y, m, d] = iso.split('-');
   return d + m + y.slice(2);
 }
-export function diasHabiles(desde, hasta, max = 400) {
+export function diasHabiles(desde, hasta, max = 6000) {
   const out = [];
   let t = new Date(desde + 'T12:00:00Z');
   const fin = new Date(hasta + 'T12:00:00Z');
@@ -127,50 +127,86 @@ export function separarAcuerdos(texto) {
 }
 
 // ---------- Descarga con caché ----------
+// Límite GLOBAL de descargas al sitio oficial (compartido por todas las búsquedas a la vez),
+// con una pausa mínima entre el inicio de cada descarga. Así se puede buscar mucho más rápido
+// sin saturar el servidor del Poder Judicial.
+export const MAX_DESCARGAS = Number(process.env.MAX_DESCARGAS || 4);
+const PAUSA_MS = Number(process.env.PAUSA_MS || 250);
+let enCurso = 0;
+const fila = [];
 let ultimo = 0;
-async function cortesia() {
-  const espera = 700 - (Date.now() - ultimo);
+async function turno() {
+  if (enCurso >= MAX_DESCARGAS) await new Promise((r) => fila.push(r));
+  enCurso++;
+  const espera = PAUSA_MS - (Date.now() - ultimo);
+  ultimo = Date.now() + Math.max(0, espera);
   if (espera > 0) await new Promise((r) => setTimeout(r, espera));
-  ultimo = Date.now();
+}
+function liberar() {
+  enCurso--;
+  const sig = fila.shift();
+  if (sig) sig();
 }
 
-// incognito = true: no escribe nada en disco (ni PDF ni texto); solo usa lo que ya estaba guardado.
-export async function obtenerLista(codigo, fecha, { incognito = false } = {}) {
-  const nombre = codigo + ddmmaa(fecha);
-  const jsonPath = path.join(CACHE, nombre + '.json');
-  const url = pdfUrl(codigo, fecha);
+// Si dos búsquedas piden la misma lista al mismo tiempo, se descarga una sola vez.
+const pendientes = new Map();
+
+async function leerCache(jsonPath) {
   try {
     const c = JSON.parse(await fs.readFile(jsonPath, 'utf8'));
     // se vuelve a separar desde el texto guardado, así una mejora del lector aplica a lo ya descargado
     if (c.estado === 'ok') Object.assign(c, separarAcuerdos(c.texto));
     return { ...c, cache: true };
-  } catch {}
-  if (!incognito) await fs.mkdir(CACHE, { recursive: true });
-  await cortesia();
-  let r;
-  try {
-    r = await fetch(url, { headers: { 'User-Agent': UA } });
-  } catch (e) {
-    return { codigo, fecha, url, estado: 'error', detalle: e.message };
+  } catch { return null; }
+}
+
+async function descargar(codigo, fecha, url) {
+  let ultimoError = '';
+  for (let intento = 1; intento <= 2; intento++) {
+    try {
+      const r = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(90000) });
+      const ct = r.headers.get('content-type') || '';
+      if (r.status === 404 || (r.ok && !ct.includes('pdf'))) return { codigo, fecha, url, estado: 'sin_lista', detalle: `HTTP ${r.status}` };
+      if (!r.ok) { ultimoError = `HTTP ${r.status}`; continue; }
+      const buf = Buffer.from(await r.arrayBuffer());
+      try {
+        const { texto, paginas } = await pdfATexto(buf);
+        return { codigo, fecha, url, estado: 'ok', paginas, texto, descargado: new Date().toISOString() };
+      } catch (e) {
+        return { codigo, fecha, url, estado: 'error', detalle: 'No se pudo leer el PDF: ' + e.message };
+      }
+    } catch (e) {
+      ultimoError = e.name === 'TimeoutError' ? 'el sitio oficial tardó demasiado' : e.message;
+    }
+    await new Promise((r) => setTimeout(r, 2000));
   }
-  const ct = r.headers.get('content-type') || '';
-  if (r.status === 404 || !ct.includes('pdf')) {
-    const res = { codigo, fecha, url, estado: 'sin_lista', detalle: `HTTP ${r.status}` };
-    if (!incognito && fecha < hoyMexico()) await fs.writeFile(jsonPath, JSON.stringify(res));
-    return res;
+  return { codigo, fecha, url, estado: 'error', detalle: ultimoError };
+}
+
+// incognito = true: no escribe nada en disco; solo usa lo que ya estaba guardado.
+export async function obtenerLista(codigo, fecha, { incognito = false } = {}) {
+  const nombre = codigo + ddmmaa(fecha);
+  const jsonPath = path.join(CACHE, nombre + '.json');
+  const url = pdfUrl(codigo, fecha);
+  const enCache = await leerCache(jsonPath);
+  if (enCache) return enCache;
+  if (!pendientes.has(nombre)) {
+    pendientes.set(nombre, (async () => {
+      await turno();
+      try { return await descargar(codigo, fecha, url); } finally { liberar(); }
+    })().finally(() => pendientes.delete(nombre)));
   }
-  if (!r.ok) return { codigo, fecha, url, estado: 'error', detalle: `HTTP ${r.status}` };
-  const buf = Buffer.from(await r.arrayBuffer());
-  if (!incognito) await fs.writeFile(path.join(CACHE, nombre + '.pdf'), buf);
-  try {
-    const { texto, paginas } = await pdfATexto(buf);
-    const { encabezado, acuerdos } = separarAcuerdos(texto);
-    const res = { codigo, fecha, url, estado: 'ok', paginas, encabezado, acuerdos, texto, descargado: new Date().toISOString() };
-    if (!incognito) await fs.writeFile(jsonPath, JSON.stringify(res));
-    return res;
-  } catch (e) {
-    return { codigo, fecha, url, estado: 'error', detalle: 'No se pudo leer el PDF: ' + e.message };
+  const res = await pendientes.get(nombre);
+  // Solo se guarda el texto (no el PDF) para ocupar poco espacio. La lista del día de hoy
+  // sin publicar no se guarda, porque puede aparecer más tarde.
+  if (!incognito && res.estado !== 'error' && (res.estado === 'ok' || fecha < hoyMexico())) {
+    try {
+      await fs.mkdir(CACHE, { recursive: true });
+      await fs.writeFile(jsonPath, JSON.stringify(res));
+    } catch {}
   }
+  if (res.estado === 'ok') return { ...res, ...separarAcuerdos(res.texto) };
+  return res;
 }
 
 // ---------- Búsqueda ----------

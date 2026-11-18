@@ -3,6 +3,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 let JUZGADOS = [];
 let ULTIMA = { hallazgos: [], listas: [], criterios: null };
 let controlador = null;
+let MAX_LISTAS = 1500, DESCARGAS = 4;
 
 // ---------- pestañas ----------
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
@@ -28,8 +29,9 @@ document.querySelectorAll('.chip[data-dias]').forEach((b) => b.addEventListener(
 // ---------- juzgados ----------
 async function cargarJuzgados() {
   const est = await fetch('/api/estado').then((r) => r.json()).catch(() => null);
-  if (est) HOY = est.hoy;
+  if (est) { HOY = est.hoy; MAX_LISTAS = est.max_listas || MAX_LISTAS; DESCARGAS = est.descargas_a_la_vez || DESCARGAS; }
   $('#desde').max = $('#hasta').max = HOY;
+  $('#desde').min = $('#hasta').min = '2010-11-03';
   ponerUltimos(5);
   JUZGADOS = await fetch('/api/juzgados').then((r) => r.json());
   const grupos = {};
@@ -40,6 +42,13 @@ async function cargarJuzgados() {
       ${js.map((j) => `<label class="juz" data-txt="${esc((j.juzgado + ' ' + j.codigo + ' ' + m).toLowerCase())}"><input type="checkbox" value="${esc(j.codigo)}"> ${esc(j.juzgado)} <code>${esc(j.codigo)}</code></label>`).join('')}
     </details>`).join('');
   $('#juzgados').querySelector('input[value="1C"]').checked = true;
+  $('#btnTodos').addEventListener('click', () => {
+    const cajas = [...document.querySelectorAll('#juzgados input')];
+    const marcar = cajas.some((c) => !c.checked);
+    cajas.forEach((c) => (c.checked = marcar));
+    $('#btnTodos').textContent = marcar ? 'Quitar todos' : 'Todos los juzgados';
+    calcular();
+  });
   $('#juzgados').addEventListener('change', calcular);
   $('#juzgados').addEventListener('click', (e) => {
     const a = e.target.closest('.todos'); if (!a) return;
@@ -58,7 +67,7 @@ $('#filtroJ').addEventListener('input', (e) => {
 const seleccion = () => [...document.querySelectorAll('#juzgados input:checked')].map((c) => c.value);
 function diasHabiles(a, b) {
   let n = 0, t = new Date(a + 'T12:00:00Z'); const f = new Date((b > HOY ? HOY : b) + 'T12:00:00Z');
-  while (t <= f && n < 1000) { const w = t.getUTCDay(); if (w && w !== 6) n++; t = new Date(+t + 864e5); }
+  while (t <= f && n < 7000) { const w = t.getUTCDay(); if (w && w !== 6) n++; t = new Date(+t + 864e5); }
   return n;
 }
 function calcular() {
@@ -66,7 +75,12 @@ function calcular() {
   $('#contSel').textContent = s ? `${s} seleccionado${s > 1 ? 's' : ''}` : '';
   const d = $('#desde').value && $('#hasta').value ? diasHabiles($('#desde').value, $('#hasta').value) : 0;
   const total = s * d;
-  $('#calculo').textContent = total ? `Se revisarán ${total} listas (${s} juzgado${s > 1 ? 's' : ''} × ${d} día${d > 1 ? 's' : ''} hábil${d > 1 ? 'es' : ''})${total > 80 ? ' — el máximo es 80.' : '.'}` : '';
+  // estimado: ~1.5 s por lista nueva entre las descargas simultáneas; las ya guardadas son instantáneas
+  const seg = Math.round(total * 1.5 / DESCARGAS);
+  const tiempo = seg < 60 ? 'menos de 1 minuto' : `unos ${Math.ceil(seg / 60)} minutos`;
+  $('#calculo').textContent = !total ? '' : total > MAX_LISTAS
+    ? `Son ${total.toLocaleString('es-MX')} listas (${s} juzgado${s > 1 ? 's' : ''} × ${d} días hábiles). El máximo por búsqueda es ${MAX_LISTAS.toLocaleString('es-MX')}: reduce juzgados o fechas.`
+    : `Se revisarán ${total.toLocaleString('es-MX')} listas (${s} juzgado${s > 1 ? 's' : ''} × ${d} día${d > 1 ? 's' : ''} hábil${d > 1 ? 'es' : ''}). Tiempo estimado: ${tiempo} (menos si ya se buscaron antes).`;
 }
 ['#desde', '#hasta'].forEach((s) => $(s).addEventListener('change', calcular));
 
@@ -97,10 +111,11 @@ $('#form').addEventListener('submit', async (e) => {
         const linea = buf.slice(0, i); buf = buf.slice(i + 1); if (!linea) continue;
         const m = JSON.parse(linea);
         if (m.tipo === 'inicio') total = m.total;
-        if (m.tipo === 'lista') { ULTIMA.listas.push(m); ULTIMA.hallazgos.push(...m.hallazgos); pintar(total); }
+        if (m.tipo === 'lista') { ULTIMA.listas.push(m); ULTIMA.hallazgos.push(...m.hallazgos); pintarPronto(total); }
       }
     }
-    $('#progresoTxt').textContent = `Listo: ${ULTIMA.listas.length} listas revisadas.`;
+    pintar(total);
+    $('#progresoTxt').textContent = `Listo: ${ULTIMA.listas.length.toLocaleString('es-MX')} listas revisadas.`;
   } catch (err) {
     if (err.name === 'AbortError') $('#progresoTxt').textContent = 'Búsqueda cancelada.';
     else { $('#error').textContent = err.message; $('#progresoCaja').hidden = true; if (!ULTIMA.listas.length) { $('#kpis').hidden = true; $('#resCaja').hidden = true; $('#vacio').hidden = false; } }
@@ -130,8 +145,15 @@ function resaltar(texto, motivos) {
   }
   return h;
 }
+let temporizador = null;
+function pintarPronto(total) {
+  // en búsquedas de cientos de listas se redibuja como máximo 3 veces por segundo
+  if (temporizador) return;
+  temporizador = setTimeout(() => { temporizador = null; pintar(total); }, 300);
+}
+const ordenar = (a, b) => (b.fecha || '').localeCompare(a.fecha || '') || nombreJ(a.codigo).localeCompare(nombreJ(b.codigo));
 function pintar(total) {
-  const L = ULTIMA.listas, H = ULTIMA.hallazgos;
+  const L = [...ULTIMA.listas].sort(ordenar), H = [...ULTIMA.hallazgos].sort(ordenar);
   $('#kListas').textContent = L.length;
   $('#kSin').textContent = L.filter((l) => l.estado === 'sin_lista').length;
   $('#kErr').textContent = L.filter((l) => l.estado === 'error').length;

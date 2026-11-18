@@ -59,7 +59,8 @@ En modo normal, las listas descargadas se guardan en `data/` para no pedirlas ot
 
 ## Límites conocidos
 
-- Máximo 80 listas por búsqueda (juzgados × días). Algunas listas pesan más de 10 MB.
+- Máximo 1,500 listas por búsqueda (juzgados × días hábiles), con 4 descargas a la vez. Se puede cambiar con
+  las variables `MAX_LISTAS` y `MAX_DESCARGAS`. El sitio oficial tiene listas desde el 3 de noviembre de 2010.
 - Las listas reservadas ("SECRETO") solo traen números, sin partes.
 - Si el PDF separa dígitos ("37 8/2026"), ese expediente puede no encontrarse.
 - Un nombre igual no prueba que sea la misma persona (homónimos).

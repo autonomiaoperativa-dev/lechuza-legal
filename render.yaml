@@ -10,3 +10,11 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+      # El plan gratuito tiene 512 MB y poco procesador: 3 descargas a la vez es lo más seguro.
+      - key: MAX_DESCARGAS
+        value: "3"
+      - key: MAX_LISTAS
+        value: "1500"
+      # Que Node libere memoria antes de llegar al límite del plan.
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=380"

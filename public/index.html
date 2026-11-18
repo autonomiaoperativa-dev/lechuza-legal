@@ -44,10 +44,11 @@
         <button type="button" class="chip" data-dias="1">Último día hábil</button>
         <button type="button" class="chip" data-dias="5">Últimos 5</button>
         <button type="button" class="chip" data-dias="10">Últimos 10</button>
+        <button type="button" class="chip" data-dias="20">Últimos 20</button>
       </div>
 
       <div class="campo">
-        <div class="fila-tit">Juzgados <span id="contSel" class="ayuda"></span></div>
+        <div class="fila-tit">Juzgados <span id="contSel" class="ayuda"></span><button type="button" id="btnTodos" class="chip">Todos los juzgados</button></div>
         <input type="search" id="filtroJ" placeholder="Filtrar juzgados…" aria-label="Filtrar juzgados">
         <div id="juzgados" class="juzgados"></div>
       </div>
@@ -127,7 +128,9 @@
     </ul>
     <h3>Límites de esta versión</h3>
     <ul>
-      <li>Máximo 80 listas por búsqueda (juzgados × días). Algunas listas pesan más de 10 MB y tardan.</li>
+      <li>Máximo 1,500 listas por búsqueda (juzgados × días hábiles): por ejemplo, todos los juzgados durante 4 semanas, o un juzgado durante 6 años. Las listas existen desde el 3 de noviembre de 2010.</li>
+      <li>Se descargan 4 listas a la vez para no saturar el sitio oficial. Lo ya buscado antes sale al instante, salvo en modo incógnito.</li>
+      <li>En la versión en línea (plan gratuito), lo guardado se borra cuando el servidor se “duerme” tras 15 minutos sin uso.</li>
       <li>Las listas de asuntos reservados (“SECRETO”) solo traen números, sin partes.</li>
       <li>A veces el PDF separa dígitos (“37 8/2026”); esos casos pueden no encontrarse.</li>
       <li>Un nombre igual no prueba que sea la misma persona (homónimos).</li>

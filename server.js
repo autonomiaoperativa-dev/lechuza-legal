@@ -11,9 +11,11 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3077);
 // Sin PORT (uso local): solo esta computadora. Con PORT (servidor en internet): todas las direcciones.
 const HOST = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
-const MAX_BUSQUEDAS_A_LA_VEZ = Number(process.env.MAX_BUSQUEDAS || 4); // cuida al servidor y al sitio oficial
+const MAX_BUSQUEDAS_A_LA_VEZ = Number(process.env.MAX_BUSQUEDAS || 8); // las descargas comparten un límite global (slp.MAX_DESCARGAS)
 let activas = 0;
-const MAX_LISTAS = 80; // tope por búsqueda: juzgados x días hábiles
+// Tope por búsqueda (juzgados x días hábiles). 1500 = todos los juzgados durante ~4 semanas,
+// o un juzgado durante ~6 años. Se puede cambiar con la variable MAX_LISTAS.
+const MAX_LISTAS = Number(process.env.MAX_LISTAS || 1500);
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml' };
 
@@ -55,9 +57,11 @@ async function buscarSeguro(req, res) {
     return json(res, 400, { error: 'Elige al menos un juzgado y un rango de fechas válido.' });
   }
   const hoy = slp.hoyMexico();
-  const dias = slp.diasHabiles(desde, hasta > hoy ? hoy : hasta);
+  // El sitio oficial tiene listas desde el 3 de noviembre de 2010; antes no hay nada que descargar.
+  const PRIMERA = '2010-11-03';
+  const dias = slp.diasHabiles(desde < PRIMERA ? PRIMERA : desde, hasta > hoy ? hoy : hasta);
   const tareas = [];
-  for (const d of dias) for (const j of juzgados) tareas.push([j, d]);
+  for (const d of [...dias].reverse()) for (const j of juzgados) tareas.push([j, d]); // lo más reciente primero
   if (tareas.length > MAX_LISTAS) {
     return json(res, 400, { error: `La búsqueda pide ${tareas.length} listas (juzgados × días hábiles). El máximo es ${MAX_LISTAS}. Reduce juzgados o fechas.` });
   }
@@ -75,16 +79,23 @@ async function buscarSeguro(req, res) {
   enviar({ tipo: 'inicio', total: tareas.length, dias: dias.length, incognito });
   let cerrado = false;
   req.on('close', () => { cerrado = true; });
-  for (const [codigo, fecha] of tareas) {
-    if (cerrado) break;
-    const lista = await slp.obtenerLista(codigo, fecha, { incognito });
-    const hallazgos = slp.buscarEnLista(lista, criterios);
-    enviar({
-      tipo: 'lista', codigo, fecha, url: lista.url, estado: lista.estado, detalle: lista.detalle,
-      paginas: lista.paginas, acuerdos: lista.acuerdos ? lista.acuerdos.length : 0, cache: !!lista.cache,
-      hallazgos: hallazgos.map((h) => ({ ...h, codigo, fecha, url: lista.url })),
-    });
-  }
+  // Varias listas a la vez: las ya guardadas salen al instante y las nuevas respetan el
+  // límite global de descargas. Cada resultado se envía en cuanto está listo.
+  let siguiente = 0;
+  const trabajador = async () => {
+    while (!cerrado && siguiente < tareas.length) {
+      const [codigo, fecha] = tareas[siguiente++];
+      const lista = await slp.obtenerLista(codigo, fecha, { incognito });
+      if (cerrado) break;
+      const hallazgos = slp.buscarEnLista(lista, criterios);
+      enviar({
+        tipo: 'lista', codigo, fecha, url: lista.url, estado: lista.estado, detalle: lista.detalle,
+        paginas: lista.paginas, acuerdos: lista.acuerdos ? lista.acuerdos.length : 0, cache: !!lista.cache,
+        hallazgos: hallazgos.map((h) => ({ ...h, codigo, fecha, url: lista.url })),
+      });
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(tareas.length, slp.MAX_DESCARGAS * 2) }, trabajador));
   enviar({ tipo: 'fin' });
   res.end();
 }
@@ -94,7 +105,7 @@ const server = http.createServer(async (req, res) => {
     const u = new URL(req.url, `http://${req.headers.host}`);
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.2' });
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.3', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS });
     if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
     // archivos de la vista
     const rel = u.pathname === '/' ? 'index.html' : u.pathname.slice(1);
