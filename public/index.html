@@ -76,6 +76,13 @@
         <div class="kpi"><span id="kErr">0</span>con error</div>
         <div class="kpi destacado"><span id="kHall">0</span>coincidencias</div>
       </div>
+      <div class="tarjeta" id="fichasCaja" hidden>
+        <div class="fila-tit"><h2>Resumen por expediente <span id="contFichas" class="ayuda"></span></h2>
+          <span><label class="check-mini"><input type="checkbox" id="pdfTexto"> incluir texto completo</label>
+          <button id="btnPdfTodos" class="secundario" type="button">Descargar PDF de todos</button></span></div>
+        <p class="nota">Resumen automático: cada línea toma frases del texto oficial del acuerdo. Información de apoyo, no asesoría legal.</p>
+        <div id="fichas"></div>
+      </div>
       <div class="tarjeta" id="resCaja" hidden>
         <div class="fila-tit"><h2>Coincidencias <span id="marcaIncog" class="etq incog-etq" hidden>incógnito</span></h2>
           <span><button id="btnCsv" class="secundario" type="button">Descargar CSV</button> <button id="btnBorrar" class="secundario" type="button">Borrar resultados</button></span></div>
@@ -141,6 +148,7 @@
 </section>
 </main>
 
+<script src="resumen.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

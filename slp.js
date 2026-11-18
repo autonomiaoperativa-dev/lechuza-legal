@@ -99,7 +99,9 @@ export function separarAcuerdos(texto) {
     const lineas = trozo.trim().split('\n').map((l) => l.trim()).filter(Boolean);
     const ult = lineas[lineas.length - 1] || '';
     if (ult.length > 3 && ult.length < 90 && !/[a-zñáéíóú]/.test(ult) && /[A-ZÑÁÉÍÓÚ]{4}/.test(ult)
-      && !/NOTIF[ÍI]QUESE|LISTA DE ACUERDOS/.test(ult)) return ult.replace(/[#*]/g, '').trim();
+      && !/NOTIF|LISTA|PERSONALMENTE|PARTE|PUBL[IÍ]QUESE/.test(ult.replace(/\s/g, ''))
+      && /JUICIO|ORDINARIO|EJECUTIVO|ESPECIAL|SUMARI|HIPOTECARIO|MERCANTIL|CIVIL|FAMILIAR|SUCESORIO|INTESTAMENTARIO|TESTAMENTARIO|DIVORCIO|ALIMENTOS|CONTROVERSIA|JURISDICCI|DILIGENCIAS|PENAL|LABORAL|INCIDENTE|ARRENDAMIENTO|USUCAPI|NULIDAD|PROCEDIMIENTO|ADOPCI|CUSTODIA|PATRIA|PRESCRIPCI|OTORGAMIENTO|CUMPLIMIENTO|REIVINDICA|RECTIFICA|INTERDIC/.test(ult.normalize('NFD').replace(/[̀-ͯ]/g, '')))
+      return ult.replace(/[#*]/g, '').replace(/[.\-–:]+$/, '').trim();
     return null;
   };
   const encabezado = idx.length ? texto.slice(0, idx[0].pos) : texto;

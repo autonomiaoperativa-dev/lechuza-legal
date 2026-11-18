@@ -147,6 +147,7 @@ function borrarResultados() {
   if (controlador) controlador.abort();
   ULTIMA = { hallazgos: [], listas: [], criterios: null, indice: null };
   $('#resultados').innerHTML = ''; $('#consultadas').innerHTML = ''; $('#comparacion').innerHTML = '';
+  $('#fichas').innerHTML = ''; $('#fichasCaja').hidden = true; GRUPOS = [];
   $('#progresoCaja').hidden = true; $('#kpis').hidden = true; $('#resCaja').hidden = true; $('#vacio').hidden = false;
   if ($('#incognito').checked) { $('#expedientes').value = ''; $('#nombres').value = ''; $('#buho').value = ''; }
 }
@@ -179,11 +180,12 @@ function pintar(total) {
   $('#kHall').textContent = H.length;
   if (total) { $('#barra').style.width = Math.round(100 * L.length / total) + '%'; $('#progresoTxt').textContent = `Descargando ${L.length} de ${total} listas que faltan…`; }
   else if (ULTIMA.indice) $('#barra').style.width = '100%';
+  pintarFichas(H);
   $('#resultados').innerHTML = H.length ? H.map((h) => `
     <div class="hall">
       <div class="cab"><span class="exp">${esc(h.expediente || 's/n')}</span>
         <span>${esc(nombreJ(h.codigo))}</span><span class="etq">${esc(h.fecha)}</span>
-        ${h.tipo_juicio ? `<span class="etq">${esc(h.tipo_juicio)}</span>` : ''}
+        ${window.Resumen.limpiarTipo(h.tipo_juicio) ? `<span class="etq">${esc(window.Resumen.limpiarTipo(h.tipo_juicio))}</span>` : ''}
         ${h.clase && h.clase !== 'EXPEDIENTE' ? `<span class="etq">${esc(h.clase)}</span>` : ''}
         ${h.motivos.map((m) => `<span class="etq motivo">${esc(m)}</span>`).join('')}
         <a href="${esc(h.url)}" target="_blank" rel="noopener">PDF oficial</a></div>
@@ -254,3 +256,53 @@ async function cargarFuentes() {
 $('#filtroF').addEventListener('input', cargarFuentes);
 
 cargarJuzgados();
+
+// ---------- resumen por expediente y PDF ----------
+let GRUPOS = [];
+function pintarFichas(H) {
+  GRUPOS = window.Resumen.agrupar(H, nombreJ);
+  $('#fichasCaja').hidden = !GRUPOS.length;
+  $('#contFichas').textContent = GRUPOS.length ? `(${GRUPOS.length})` : '';
+  $('#fichas').innerHTML = GRUPOS.map((g, i) => {
+    const filas = [...g.acuerdos].reverse(); // en pantalla, lo más reciente arriba
+    const fila = (a) => `<li>
+        <div class="tl-cab"><strong>${esc(fmtF(a.fecha))}</strong>${a.etiquetas.map((e) => `<span class="etq">${esc(e)}</span>`).join('')}</div>
+        <div>${esc(a.resumen)}</div>
+        ${a.plazos.length || a.montos.length ? `<div class="tl-extra">${a.plazos.length ? 'Plazos: ' + esc(a.plazos.join(', ')) : ''}${a.plazos.length && a.montos.length ? ' · ' : ''}${a.montos.length ? 'Montos: ' + esc(a.montos.join(', ')) : ''}</div>` : ''}
+        <a href="${esc(a.url)}" target="_blank" rel="noopener" class="ayuda">lista oficial</a></li>`;
+    return `<div class="ficha">
+      <div class="fila-tit"><div><span class="exp">${esc(g.expediente)}</span> <span>${esc(g.juzgado)}</span></div>
+        <button class="secundario btnPdf" type="button" data-i="${i}">Descargar PDF</button></div>
+      <div class="ficha-datos">${g.tipo_juicio ? `<span class="etq">${esc(g.tipo_juicio)}</span> ` : ''}<span class="etq">${g.total} acuerdo${g.total > 1 ? 's' : ''} · ${esc(fmtF(g.primera))} a ${esc(fmtF(g.ultima))}</span></div>
+      <div class="partes">${esc(g.partes)}</div>
+      <ol class="linea-tiempo">${filas.slice(0, 5).map(fila).join('')}</ol>
+      ${filas.length > 5 ? `<details><summary>Ver los otros ${filas.length - 5} acuerdos</summary><ol class="linea-tiempo">${filas.slice(5).map(fila).join('')}</ol></details>` : ''}
+    </div>`;
+  }).join('');
+}
+async function descargarPdf(grupos, boton) {
+  const original = boton.textContent;
+  boton.disabled = true; boton.textContent = 'Generando PDF…';
+  try {
+    const c = ULTIMA.criterios || {};
+    const lineas = (t) => t.split(/[\r\n]+/).map((x) => x.trim()).filter(Boolean).join(', ');
+    const criterios = [c.expedientes && 'expedientes: ' + lineas(c.expedientes),
+      c.nombres && 'nombres: ' + lineas(c.nombres),
+      c.desde && `del ${fmtF(c.desde)} al ${fmtF(c.hasta)}`].filter(Boolean).join(' · ');
+    const r = await fetch('/api/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grupos, incluirTexto: $('#pdfTexto').checked, criterios }) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No se pudo generar el PDF');
+    const blob = await r.blob();
+    const nombre = (r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || 'resumen.pdf';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch (e) { alertaSuave(e.message); }
+  finally { boton.disabled = false; boton.textContent = original; }
+}
+function alertaSuave(m) { $('#error').textContent = m; }
+$('#fichas').addEventListener('click', (e) => {
+  const b = e.target.closest('.btnPdf'); if (!b) return;
+  descargarPdf([GRUPOS[+b.dataset.i]], b);
+});
+$('#btnPdfTodos').addEventListener('click', (e) => descargarPdf(GRUPOS, e.currentTarget));

@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as slp from './slp.js';
 import * as indice from './indice.js';
+import { generarResumenPdf } from './pdf.js';
 
 // Archivo local (data/lechuza.db). Si no existe, todo funciona como antes (descargando).
 let DB = null;
@@ -43,9 +44,9 @@ function json(res, code, data) {
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(data));
 }
-async function leerCuerpo(req) {
+async function leerCuerpo(req, max = 1e6) {
   let b = '';
-  for await (const c of req) { b += c; if (b.length > 1e6) throw new Error('cuerpo muy grande'); }
+  for await (const c of req) { b += c; if (b.length > max) throw new Error('cuerpo muy grande'); }
   return b ? JSON.parse(b) : {};
 }
 
@@ -145,8 +146,14 @@ const server = http.createServer(async (req, res) => {
     const u = new URL(req.url, `http://${req.headers.host}`);
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.4', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.5', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
     if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
+    if (u.pathname === '/api/pdf' && req.method === 'POST') {
+      const q = await leerCuerpo(req, 20e6);
+      const grupos = Array.isArray(q.grupos) ? q.grupos.slice(0, 200) : [];
+      if (!grupos.length) return json(res, 400, { error: 'No hay expedientes para el PDF.' });
+      return generarResumenPdf(res, { grupos, incluirTexto: !!q.incluirTexto, criterios: String(q.criterios || '').slice(0, 300) });
+    }
     // archivos de la vista
     const rel = u.pathname === '/' ? 'index.html' : u.pathname.slice(1);
     const file = path.join(DIR, 'public', path.normalize(rel));

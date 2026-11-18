@@ -31,6 +31,17 @@ Funciona solo en la computadora de cada quien: no hay un servidor compartido.
    (una línea por expediente, con fecha si la tienes). Verás qué encontraron ambos y qué solo uno.
 3. Si algo falla o no coincide, anota el juzgado, la fecha y el expediente, y repórtalo.
 
+### Resumen por expediente y PDF
+
+Cuando una búsqueda encuentra acuerdos de un expediente, aparece la sección **Resumen por expediente**:
+una ficha por expediente y juzgado con el tipo de juicio, las partes, cuántos acuerdos hay y una línea
+de tiempo. Cada acuerdo trae una o dos frases del texto oficial, etiquetas (Admisión, Audiencia,
+Sentencia, Recurso…), los plazos que menciona ("término de 3 días") y los montos.
+
+**Descargar PDF** (en cada ficha, o "de todos") genera el resumen en PDF; con "incluir texto completo"
+agrega el texto íntegro de cada acuerdo. El resumen es automático (extractivo): no inventa ni interpreta,
+y no es asesoría legal. El PDF se genera al momento y no se guarda en el servidor.
+
 ### Búsqueda incógnito
 
 Activa el interruptor **Búsqueda incógnito** antes de buscar:
