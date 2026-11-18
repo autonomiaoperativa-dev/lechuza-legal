@@ -94,7 +94,7 @@ const server = http.createServer(async (req, res) => {
     const u = new URL(req.url, `http://${req.headers.host}`);
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.1' });
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.2' });
     if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
     // archivos de la vista
     const rel = u.pathname === '/' ? 'index.html' : u.pathname.slice(1);
