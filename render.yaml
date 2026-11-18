@@ -1,0 +1,12 @@
+# Configuración para publicar Lechuza Legal en Render (render.com), plan gratuito.
+services:
+  - type: web
+    name: lechuza-legal
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/estado
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

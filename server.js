@@ -1,5 +1,6 @@
-// Servidor local de Lechuza Legal.
-// Arranque: npm start  ->  http://localhost:3077
+// Servidor de Lechuza Legal.
+// En tu computadora: npm start  ->  http://localhost:3077
+// En un servidor (Render u otro) se usa la variable PORT y acepta visitas de internet.
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -8,7 +9,10 @@ import * as slp from './slp.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3077);
-const HOST = process.env.HOST || '127.0.0.1'; // solo esta computadora
+// Sin PORT (uso local): solo esta computadora. Con PORT (servidor en internet): todas las direcciones.
+const HOST = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
+const MAX_BUSQUEDAS_A_LA_VEZ = Number(process.env.MAX_BUSQUEDAS || 4); // cuida al servidor y al sitio oficial
+let activas = 0;
 const MAX_LISTAS = 80; // tope por búsqueda: juzgados x días hábiles
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml' };
@@ -36,6 +40,14 @@ async function fuentes() {
 }
 
 async function buscar(req, res) {
+  if (activas >= MAX_BUSQUEDAS_A_LA_VEZ) {
+    return json(res, 429, { error: 'Hay varias búsquedas en curso. Intenta de nuevo en un minuto.' });
+  }
+  activas++;
+  try { await buscarSeguro(req, res); } finally { activas--; }
+}
+
+async function buscarSeguro(req, res) {
   const q = await leerCuerpo(req);
   const juzgados = (q.juzgados || []).filter((c) => /^[A-Z0-9]{1,6}$/.test(c));
   const desde = q.desde, hasta = q.hasta || q.desde;
@@ -89,7 +101,7 @@ const server = http.createServer(async (req, res) => {
     const file = path.join(DIR, 'public', path.normalize(rel));
     if (!file.startsWith(path.join(DIR, 'public'))) return json(res, 403, { error: 'no permitido' });
     const data = await fs.readFile(file);
-    res.writeHead(200, { 'Content-Type': TIPOS[path.extname(file)] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': TIPOS[path.extname(file)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff' });
     res.end(data);
   } catch (e) {
     if (e.code === 'ENOENT') return json(res, 404, { error: 'no encontrado' });
@@ -98,4 +110,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, HOST, () => console.log(`Lechuza Legal listo en http://localhost:${PORT}`));
+server.listen(PORT, HOST, () => console.log(`Lechuza Legal listo en http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT} (escuchando en ${HOST})`));

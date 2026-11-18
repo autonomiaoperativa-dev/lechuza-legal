@@ -1,7 +1,7 @@
 {
   "name": "lechuza-legal",
   "version": "1.0.0",
-  "description": "",
+  "description": "Buscador de listas de acuerdos del Poder Judicial de San Luis Potosí",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -13,5 +13,8 @@
   "type": "module",
   "dependencies": {
     "pdfjs-dist": "^4.10.38"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
