@@ -25,8 +25,11 @@ const slp = await import('./slp.js');
 const indice = await import('./indice.js');
 
 const DATA = path.join(DIR, 'data');
-const LOCK = path.join(DATA, 'indexar.lock');
-const ESTADO = path.join(DATA, 'indexar_estado.json');
+// La actualización diaria (--dias) usa su propio candado y estado, para poder correr mientras sigue
+// la descarga grande sin pisar el avance que muestra la pantalla.
+const DIARIO = !!args.dias;
+const LOCK = path.join(DATA, DIARIO ? 'indexar-diario.lock' : 'indexar.lock');
+const ESTADO = path.join(DATA, DIARIO ? 'indexar_estado_diario.json' : 'indexar_estado.json');
 const LOG = path.join(DATA, 'indexar.log');
 fs.mkdirSync(DATA, { recursive: true });
 
@@ -39,7 +42,7 @@ fs.writeFileSync(LOCK, String(process.pid));
 const quitarLock = () => { try { if (fs.readFileSync(LOCK, 'utf8') === String(process.pid)) fs.unlinkSync(LOCK); } catch {} };
 
 const log = (m) => {
-  const linea = `[${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}] ${m}`;
+  const linea = `[${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}]${DIARIO ? ' [diario]' : ''} ${m}`;
   console.log(linea);
   fs.appendFileSync(LOG, linea + '\n');
 };

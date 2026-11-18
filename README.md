@@ -50,7 +50,9 @@ archivo local (`data/lechuza.db`, una base de datos SQLite con índice de texto)
    (~47 listas por minuto, unos 3 días en total, ~15 GB). Se puede cerrar y volver a abrir: retoma donde iba.
 2. Abre Lechuza Legal como siempre (`ABRIR LECHUZA LEGAL.bat`). Lo que ya esté en el archivo se busca al
    instante (cientos de miles de listas en menos de un segundo) y solo se descarga lo que falte.
-3. Para mantenerlo al día: `DESCARGAR ARCHIVO.bat --dias=7` (baja solo la última semana).
+3. Para mantenerlo al día: `ACTUALIZAR ARCHIVO.bat` baja lo que falte de las últimas 2 semanas, sin abrir
+   ventana. Se puede programar en Windows (Programador de tareas) para que corra solo cada mañana; puede
+   correr mientras sigue la descarga grande.
 
 Otras opciones: `--desde=2020-01-01`, `--juzgados=1C,2C`, `--descargas=2`.
 El archivo contiene nombres publicados en las listas: es solo para uso del despacho y nunca se sube a GitHub.
