@@ -97,3 +97,5 @@ body.incognito .incog { border-style: solid; border-color: #5b4b8a; background: 
 body.incognito .top { border-bottom: 3px solid #5b4b8a; }
 body.incognito .primario { background: #5b4b8a; }
 .incog-etq { background: #5b4b8a; color: #fff; border-color: transparent; vertical-align: middle; }
+
+.archivo { background: var(--fondo); border-radius: 8px; padding: 8px 10px; color: var(--texto); }

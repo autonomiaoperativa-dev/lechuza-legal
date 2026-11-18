@@ -3,7 +3,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 let JUZGADOS = [];
 let ULTIMA = { hallazgos: [], listas: [], criterios: null };
 let controlador = null;
-let MAX_LISTAS = 1500, DESCARGAS = 4;
+let MAX_LISTAS = 1500, DESCARGAS = 4, ARCHIVO = null;
 
 // ---------- pestañas ----------
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
@@ -29,7 +29,8 @@ document.querySelectorAll('.chip[data-dias]').forEach((b) => b.addEventListener(
 // ---------- juzgados ----------
 async function cargarJuzgados() {
   const est = await fetch('/api/estado').then((r) => r.json()).catch(() => null);
-  if (est) { HOY = est.hoy; MAX_LISTAS = est.max_listas || MAX_LISTAS; DESCARGAS = est.descargas_a_la_vez || DESCARGAS; }
+  if (est) { HOY = est.hoy; MAX_LISTAS = est.max_listas || MAX_LISTAS; DESCARGAS = est.descargas_a_la_vez || DESCARGAS; ARCHIVO = est.archivo; }
+  pintarArchivo();
   $('#desde').max = $('#hasta').max = HOY;
   $('#desde').min = $('#hasta').min = '2010-11-03';
   ponerUltimos(5);
@@ -64,6 +65,19 @@ $('#filtroJ').addEventListener('input', (e) => {
   document.querySelectorAll('.juz').forEach((l) => (l.style.display = !q || l.dataset.txt.includes(q) ? '' : 'none'));
   if (q) document.querySelectorAll('.grupo').forEach((g) => (g.open = true));
 });
+const fmtF = (f) => f ? f.split('-').reverse().join('/') : '';
+function pintarArchivo() {
+  const a = ARCHIVO, el = $('#archivo');
+  if (!a || !a.listas) { el.hidden = true; return; }
+  el.hidden = false;
+  const d = a.descargador;
+  el.innerHTML = `<strong>Archivo en esta computadora:</strong> ${a.listas.toLocaleString('es-MX')} listas (${a.acuerdos.toLocaleString('es-MX')} acuerdos) del ${fmtF(a.desde)} al ${fmtF(a.hasta)}. Lo que esté ahí sale al instante.`
+    + (d ? `<br><span class="ayuda">Descargando más: va en el ${fmtF(d.fecha_en_curso)} · ${d.hechas.toLocaleString('es-MX')} de ${d.pendientes_al_inicio.toLocaleString('es-MX')} · faltan unas ${d.eta_horas ?? '?'} h.</span>` : '');
+}
+setInterval(async () => {
+  const est = await fetch('/api/estado').then((r) => r.json()).catch(() => null);
+  if (est) { ARCHIVO = est.archivo; pintarArchivo(); }
+}, 60000);
 const seleccion = () => [...document.querySelectorAll('#juzgados input:checked')].map((c) => c.value);
 function diasHabiles(a, b) {
   let n = 0, t = new Date(a + 'T12:00:00Z'); const f = new Date((b > HOY ? HOY : b) + 'T12:00:00Z');
@@ -78,8 +92,10 @@ function calcular() {
   // estimado: ~1.5 s por lista nueva entre las descargas simultáneas; las ya guardadas son instantáneas
   const seg = Math.round(total * 1.5 / DESCARGAS);
   const tiempo = seg < 60 ? 'menos de 1 minuto' : `unos ${Math.ceil(seg / 60)} minutos`;
-  $('#calculo').textContent = !total ? '' : total > MAX_LISTAS
+  const nota = ARCHIVO && ARCHIVO.listas ? ' Las que ya estén en el archivo local no cuentan y salen al instante.' : '';
+  $('#calculo').textContent = !total ? '' : (total > MAX_LISTAS && !nota)
     ? `Son ${total.toLocaleString('es-MX')} listas (${s} juzgado${s > 1 ? 's' : ''} × ${d} días hábiles). El máximo por búsqueda es ${MAX_LISTAS.toLocaleString('es-MX')}: reduce juzgados o fechas.`
+    : nota ? `Se revisarán ${total.toLocaleString('es-MX')} listas (${s} juzgado${s > 1 ? 's' : ''} × ${d} día${d > 1 ? 's' : ''} hábil${d > 1 ? 'es' : ''}).${nota} Lo que falte se descarga (máximo ${MAX_LISTAS.toLocaleString('es-MX')}).`
     : `Se revisarán ${total.toLocaleString('es-MX')} listas (${s} juzgado${s > 1 ? 's' : ''} × ${d} día${d > 1 ? 's' : ''} hábil${d > 1 ? 'es' : ''}). Tiempo estimado: ${tiempo} (menos si ya se buscaron antes).`;
 }
 ['#desde', '#hasta'].forEach((s) => $(s).addEventListener('change', calcular));
@@ -95,7 +111,7 @@ $('#form').addEventListener('submit', async (e) => {
     incognito: $('#incognito').checked,
   };
   $('#marcaIncog').hidden = !cuerpo.incognito;
-  ULTIMA = { hallazgos: [], listas: [], criterios: cuerpo };
+  ULTIMA = { hallazgos: [], listas: [], criterios: cuerpo, indice: null };
   controlador = new AbortController();
   $('#btnBuscar').disabled = true;
   $('#vacio').hidden = true; $('#progresoCaja').hidden = false; $('#kpis').hidden = false; $('#resCaja').hidden = false;
@@ -111,11 +127,13 @@ $('#form').addEventListener('submit', async (e) => {
         const linea = buf.slice(0, i); buf = buf.slice(i + 1); if (!linea) continue;
         const m = JSON.parse(linea);
         if (m.tipo === 'inicio') total = m.total;
+        if (m.tipo === 'indice') { ULTIMA.indice = m; ULTIMA.hallazgos.push(...m.hallazgos); pintar(total); }
         if (m.tipo === 'lista') { ULTIMA.listas.push(m); ULTIMA.hallazgos.push(...m.hallazgos); pintarPronto(total); }
       }
     }
     pintar(total);
-    $('#progresoTxt').textContent = `Listo: ${ULTIMA.listas.length.toLocaleString('es-MX')} listas revisadas.`;
+    const ix = ULTIMA.indice;
+    $('#progresoTxt').textContent = `Listo: ${(ULTIMA.listas.length + (ix ? ix.listas : 0)).toLocaleString('es-MX')} listas revisadas` + (ix ? ` (${ix.listas.toLocaleString('es-MX')} en el archivo local, en ${(ix.ms / 1000).toFixed(1)} s)` : '') + (ix && ix.recortado ? '. Hay demasiadas coincidencias: se muestran las primeras 3,000.' : '.');
   } catch (err) {
     if (err.name === 'AbortError') $('#progresoTxt').textContent = 'Búsqueda cancelada.';
     else { $('#error').textContent = err.message; $('#progresoCaja').hidden = true; if (!ULTIMA.listas.length) { $('#kpis').hidden = true; $('#resCaja').hidden = true; $('#vacio').hidden = false; } }
@@ -127,7 +145,7 @@ $('#btnCancelar').addEventListener('click', () => controlador && controlador.abo
 $('#incognito').addEventListener('change', (e) => document.body.classList.toggle('incognito', e.target.checked));
 function borrarResultados() {
   if (controlador) controlador.abort();
-  ULTIMA = { hallazgos: [], listas: [], criterios: null };
+  ULTIMA = { hallazgos: [], listas: [], criterios: null, indice: null };
   $('#resultados').innerHTML = ''; $('#consultadas').innerHTML = ''; $('#comparacion').innerHTML = '';
   $('#progresoCaja').hidden = true; $('#kpis').hidden = true; $('#resCaja').hidden = true; $('#vacio').hidden = false;
   if ($('#incognito').checked) { $('#expedientes').value = ''; $('#nombres').value = ''; $('#buho').value = ''; }
@@ -154,11 +172,13 @@ function pintarPronto(total) {
 const ordenar = (a, b) => (b.fecha || '').localeCompare(a.fecha || '') || nombreJ(a.codigo).localeCompare(nombreJ(b.codigo));
 function pintar(total) {
   const L = [...ULTIMA.listas].sort(ordenar), H = [...ULTIMA.hallazgos].sort(ordenar);
-  $('#kListas').textContent = L.length;
-  $('#kSin').textContent = L.filter((l) => l.estado === 'sin_lista').length;
+  const IX = ULTIMA.indice || { listas: 0, sin_lista: 0 };
+  $('#kListas').textContent = (L.length + IX.listas).toLocaleString('es-MX');
+  $('#kSin').textContent = (L.filter((l) => l.estado === 'sin_lista').length + IX.sin_lista).toLocaleString('es-MX');
   $('#kErr').textContent = L.filter((l) => l.estado === 'error').length;
   $('#kHall').textContent = H.length;
-  if (total) { $('#barra').style.width = Math.round(100 * L.length / total) + '%'; $('#progresoTxt').textContent = `Consultando ${L.length} de ${total} listas…`; }
+  if (total) { $('#barra').style.width = Math.round(100 * L.length / total) + '%'; $('#progresoTxt').textContent = `Descargando ${L.length} de ${total} listas que faltan…`; }
+  else if (ULTIMA.indice) $('#barra').style.width = '100%';
   $('#resultados').innerHTML = H.length ? H.map((h) => `
     <div class="hall">
       <div class="cab"><span class="exp">${esc(h.expediente || 's/n')}</span>
@@ -170,7 +190,8 @@ function pintar(total) {
       <div class="partes">${resaltar(h.partes, h.motivos)}</div>
       <details><summary>Ver texto del acuerdo</summary><p class="txt">${resaltar(h.texto, h.motivos)}</p></details>
     </div>`).join('') : `<p class="nota">${L.length ? 'Sin coincidencias en las listas revisadas hasta ahora.' : ''}</p>`;
-  $('#consultadas').innerHTML = `<table><thead><tr><th>Fecha</th><th>Juzgado</th><th>Estado</th><th>Páginas</th><th>Acuerdos</th><th></th></tr></thead><tbody>${
+  const resumenIx = ULTIMA.indice ? `<p class="nota">Archivo local: ${ULTIMA.indice.listas.toLocaleString('es-MX')} listas revisadas al instante (${ULTIMA.indice.ok.toLocaleString('es-MX')} con acuerdos, ${ULTIMA.indice.sin_lista.toLocaleString('es-MX')} sin lista). Abajo, las que se descargaron ahora.</p>` : '';
+  $('#consultadas').innerHTML = resumenIx + `<table><thead><tr><th>Fecha</th><th>Juzgado</th><th>Estado</th><th>Páginas</th><th>Acuerdos</th><th></th></tr></thead><tbody>${
     L.map((l) => `<tr><td>${esc(l.fecha)}</td><td>${esc(nombreJ(l.codigo))} <code>${esc(l.codigo)}</code></td>
       <td class="${l.estado === 'ok' ? 'e-ok' : l.estado === 'sin_lista' ? 'e-sin' : 'e-err'}">${l.estado === 'ok' ? 'leída' : l.estado === 'sin_lista' ? 'sin lista' : 'error: ' + esc(l.detalle)}${l.cache ? ' · guardada' : ''}</td>
       <td>${l.paginas ?? ''}</td><td>${l.estado === 'ok' ? l.acuerdos : ''}</td><td><a href="${esc(l.url)}" target="_blank" rel="noopener">PDF</a></td></tr>`).join('')}</tbody></table>`;

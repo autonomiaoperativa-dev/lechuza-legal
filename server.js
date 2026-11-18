@@ -6,6 +6,26 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as slp from './slp.js';
+import * as indice from './indice.js';
+
+// Archivo local (data/lechuza.db). Si no existe, todo funciona como antes (descargando).
+let DB = null;
+async function obtenerIndice() {
+  if (!DB) { try { DB = await indice.abrir(); } catch (e) { console.error('Archivo local no disponible:', e.message); } }
+  return DB;
+}
+let statsCache = { t: 0, v: null };
+async function estadoArchivo() {
+  const db = await obtenerIndice();
+  if (!db) return null;
+  if (Date.now() - statsCache.t > 60000) statsCache = { t: Date.now(), v: indice.estadisticas(db) };
+  let descargador = null;
+  try {
+    const e = JSON.parse(await fs.readFile(path.join(DIR, 'data', 'indexar_estado.json'), 'utf8'));
+    if (e.corriendo && Date.now() - Date.parse(e.actualizado) < 30 * 60000) descargador = e;
+  } catch {}
+  return { ...statsCache.v, descargador };
+}
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3077);
@@ -60,10 +80,21 @@ async function buscarSeguro(req, res) {
   // El sitio oficial tiene listas desde el 3 de noviembre de 2010; antes no hay nada que descargar.
   const PRIMERA = '2010-11-03';
   const dias = slp.diasHabiles(desde < PRIMERA ? PRIMERA : desde, hasta > hoy ? hoy : hasta);
+  if (!dias.length) return json(res, 400, { error: 'No hay días hábiles en ese rango (las listas en línea empiezan el 3 de noviembre de 2010).' });
   const tareas = [];
   for (const d of [...dias].reverse()) for (const j of juzgados) tareas.push([j, d]); // lo más reciente primero
-  if (tareas.length > MAX_LISTAS) {
-    return json(res, 400, { error: `La búsqueda pide ${tareas.length} listas (juzgados × días hábiles). El máximo es ${MAX_LISTAS}. Reduce juzgados o fechas.` });
+  // Lo que ya está en el archivo local se busca ahí al instante; solo se descarga lo que falte.
+  const db = await obtenerIndice();
+  const rango = { desde: dias[0], hasta: dias[dias.length - 1] };
+  let faltantes = tareas, enArchivo = { listas: 0, ok: 0, sin_lista: 0 };
+  if (db) {
+    const cob = indice.cobertura(db, juzgados, rango.desde, rango.hasta);
+    faltantes = tareas.filter(([j, d]) => !cob.has(j + '|' + d));
+    for (const v of cob.values()) { enArchivo.listas++; if (v === 'ok') enArchivo.ok++; else enArchivo.sin_lista++; }
+  }
+  if (faltantes.length > MAX_LISTAS) {
+    const guardadas = enArchivo.listas ? ` (${enArchivo.listas.toLocaleString('es-MX')} ya están guardadas)` : '';
+    return json(res, 400, { error: `La búsqueda pide ${tareas.length.toLocaleString('es-MX')} listas${guardadas} y habría que descargar ${faltantes.length.toLocaleString('es-MX')}. El máximo por búsqueda es ${MAX_LISTAS.toLocaleString('es-MX')}. Reduce juzgados o fechas, o espera a que el archivo local tenga esas fechas.` });
   }
   const criterios = {
     expedientes: String(q.expedientes || '').split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean),
@@ -76,16 +107,25 @@ async function buscarSeguro(req, res) {
   }
   res.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store' });
   const enviar = (o) => res.write(JSON.stringify(o) + '\n');
-  enviar({ tipo: 'inicio', total: tareas.length, dias: dias.length, incognito });
+  enviar({ tipo: 'inicio', total: faltantes.length, total_rango: tareas.length, dias: dias.length, incognito });
+  if (db && enArchivo.listas) {
+    const t0 = Date.now();
+    const r = indice.buscar(db, { juzgados, ...rango, ...criterios });
+    enviar({ tipo: 'indice', ...enArchivo, hallazgos: r.hallazgos, recortado: r.recortado, ms: Date.now() - t0 });
+  }
   let cerrado = false;
   req.on('close', () => { cerrado = true; });
   // Varias listas a la vez: las ya guardadas salen al instante y las nuevas respetan el
   // límite global de descargas. Cada resultado se envía en cuanto está listo.
   let siguiente = 0;
   const trabajador = async () => {
-    while (!cerrado && siguiente < tareas.length) {
-      const [codigo, fecha] = tareas[siguiente++];
+    while (!cerrado && siguiente < faltantes.length) {
+      const [codigo, fecha] = faltantes[siguiente++];
       const lista = await slp.obtenerLista(codigo, fecha, { incognito });
+      // lo recién descargado también queda en el archivo local (salvo en incógnito y la lista de hoy sin publicar)
+      if (db && !incognito && (lista.estado === 'ok' || (lista.estado === 'sin_lista' && fecha < hoy))) {
+        try { indice.guardar(db, lista); } catch {}
+      }
       if (cerrado) break;
       const hallazgos = slp.buscarEnLista(lista, criterios);
       enviar({
@@ -95,7 +135,7 @@ async function buscarSeguro(req, res) {
       });
     }
   };
-  await Promise.all(Array.from({ length: Math.min(tareas.length, slp.MAX_DESCARGAS * 2) }, trabajador));
+  await Promise.all(Array.from({ length: Math.min(faltantes.length, slp.MAX_DESCARGAS * 2) }, trabajador));
   enviar({ tipo: 'fin' });
   res.end();
 }
@@ -105,7 +145,7 @@ const server = http.createServer(async (req, res) => {
     const u = new URL(req.url, `http://${req.headers.host}`);
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.3', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS });
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.4', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
     if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
     // archivos de la vista
     const rel = u.pathname === '/' ? 'index.html' : u.pathname.slice(1);

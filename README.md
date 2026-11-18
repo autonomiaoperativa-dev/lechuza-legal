@@ -40,6 +40,22 @@ Activa el interruptor **Búsqueda incógnito** antes de buscar:
 - En cualquier modo, los nombres y expedientes que escribes **nunca se envían** al Poder Judicial: el
   programa descarga la lista completa del juzgado y busca en tu computadora.
 
+## Archivo local: búsquedas de años en segundos (en tu computadora)
+
+Para buscar en muchos años sin esperar descargas, Lechuza Legal puede guardar todas las listas en un
+archivo local (`data/lechuza.db`, una base de datos SQLite con índice de texto).
+
+1. Doble clic en `DESCARGAR ARCHIVO.bat`. Baja los últimos 10 años de los 73 juzgados, de lo más
+   reciente a lo más antiguo, con 3 descargas a la vez para no saturar el sitio oficial
+   (~47 listas por minuto, unos 3 días en total, ~15 GB). Se puede cerrar y volver a abrir: retoma donde iba.
+2. Abre Lechuza Legal como siempre (`ABRIR LECHUZA LEGAL.bat`). Lo que ya esté en el archivo se busca al
+   instante (cientos de miles de listas en menos de un segundo) y solo se descarga lo que falte.
+3. Para mantenerlo al día: `DESCARGAR ARCHIVO.bat --dias=7` (baja solo la última semana).
+
+Otras opciones: `--desde=2020-01-01`, `--juzgados=1C,2C`, `--descargas=2`.
+El archivo contiene nombres publicados en las listas: es solo para uso del despacho y nunca se sube a GitHub.
+La versión en línea (Render) no tiene archivo local; ahí cada búsqueda descarga del sitio oficial.
+
 ## Qué hace por dentro
 
 1. Por cada juzgado y día hábil descarga el PDF oficial:

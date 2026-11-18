@@ -61,7 +61,7 @@ export function normExpediente(s) {
 }
 
 async function pdfATexto(buf) {
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), useSystemFonts: true, isEvalSupported: false }).promise;
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), useSystemFonts: true, isEvalSupported: false, verbosity: 0 }).promise;
   let texto = '';
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
@@ -181,6 +181,17 @@ async function descargar(codigo, fecha, url) {
     await new Promise((r) => setTimeout(r, 2000));
   }
   return { codigo, fecha, url, estado: 'error', detalle: ultimoError };
+}
+
+// Descarga una lista sin usar el caché de archivos (la usa el descargador del archivo local).
+// Respeta el mismo límite global de descargas.
+export async function descargarDirecto(codigo, fecha) {
+  const url = pdfUrl(codigo, fecha);
+  await turno();
+  let res;
+  try { res = await descargar(codigo, fecha, url); } finally { liberar(); }
+  if (res.estado === 'ok') return { ...res, ...separarAcuerdos(res.texto) };
+  return res;
 }
 
 // incognito = true: no escribe nada en disco; solo usa lo que ya estaba guardado.
