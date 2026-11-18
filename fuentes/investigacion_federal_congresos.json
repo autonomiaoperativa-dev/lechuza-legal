@@ -1,0 +1,614 @@
+[
+  {
+    "url": "https://www.diputados.gob.mx/LeyesBiblio/index.htm",
+    "grupo": "Federal y SLP",
+    "institucion": "Cámara de Diputados del H. Congreso de la Unión (LXVI Legislatura) – Leyes Federales de México",
+    "estado": "Federal",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo de leyes federales vigentes"
+    ],
+    "pagina_busqueda_url": "https://www.diputados.gob.mx/LeyesBiblio/index.htm",
+    "formato_resultado": "HTML (lista) con descarga de cada ley en PDF y Word (.doc)",
+    "notas": "Página grande (~200 mil caracteres, 1,323 enlaces; 334 PDF y 334 DOC en LeyesBiblio/pdf y /doc). Codificación ISO-8859-1 (los acentos se ven mal si no se decodifica bien). Secciones: Vigentes, CPEUM (reformas cronológicas y por artículo), Marco jurídico del Congreso, Abrogadas, Sumario, Legislaturas (reformas LXVI en legis/reflxvi.htm). Hay buscador general del sitio, no un formulario específico.",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresosanluis.gob.mx/legislacion/codigos",
+    "grupo": "Federal y SLP",
+    "institucion": "H. Congreso del Estado de San Luis Potosí (LXIV Legislatura)",
+    "estado": "San Luis Potosí",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo"
+    ],
+    "pagina_busqueda_url": "https://congresosanluis.gob.mx/legislacion/codigos",
+    "formato_resultado": "Tabla HTML (Nombre | Fecha de última reforma | Descarga) con enlaces a PDF; Código de Procedimientos Civiles y de Procedimientos Penales en Word (.doc)",
+    "notas": "8 códigos (Civil, Familiar, Penal, Fiscal, Procesal Administrativo, Procedimientos Civiles, Procedimientos Penales, Ética). La tabla trae la fecha de última reforma, útil para detectar cambios. Sitio Drupal 7 con buscador general ('Formulario de búsqueda'); /user es acceso interno del personal.",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresosanluis.gob.mx/legislacion/leyes",
+    "grupo": "Federal y SLP",
+    "institucion": "H. Congreso del Estado de San Luis Potosí (LXIV Legislatura)",
+    "estado": "San Luis Potosí",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo paginado"
+    ],
+    "pagina_busqueda_url": "https://congresosanluis.gob.mx/legislacion/leyes",
+    "formato_resultado": "Tabla HTML paginada (20 por página, 7 páginas: ?page=0 a ?page=6) con enlaces a PDF y fecha de última reforma",
+    "notas": "Mismo formato que Códigos. Para el listado completo hay que recorrer ?page=1 a ?page=6. Los nombres de PDF incluyen la fecha de la versión (p. ej. 'al 24 de junio de 2026').",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresosanluis.gob.mx/legislacion/reglamentos",
+    "grupo": "Federal y SLP",
+    "institucion": "H. Congreso del Estado de San Luis Potosí (LXIV Legislatura)",
+    "estado": "San Luis Potosí",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo"
+    ],
+    "pagina_busqueda_url": "https://congresosanluis.gob.mx/legislacion/reglamentos",
+    "formato_resultado": "Tabla HTML con enlaces a PDF y fecha de última reforma",
+    "notas": "9 filas, casi todos reglamentos internos del Congreso (Reglamento del Congreso al 03/11/2026, transparencia, protocolo de género, etc.). Una fila aparece duplicada (Unidad de Evaluación y Control). Poco útil para litigio.",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresosanluis.gob.mx/legislacion/aranceles",
+    "grupo": "Federal y SLP",
+    "institucion": "H. Congreso del Estado de San Luis Potosí (LXIV Legislatura)",
+    "estado": "San Luis Potosí",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo"
+    ],
+    "pagina_busqueda_url": "https://congresosanluis.gob.mx/legislacion/aranceles",
+    "formato_resultado": "Tabla HTML con enlaces a PDF y fecha de última reforma",
+    "notas": "3 filas: Arancel de Notarios (2022-09-28), Arancel del Abogado (2019-11-07) y Ley Orgánica del Municipio Libre (2024-09-18; versión más vieja que la del bloque lateral, que es al 18/12/2025).",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresosanluis.gob.mx/legislacion/constitucion",
+    "grupo": "Federal y SLP",
+    "institucion": "H. Congreso del Estado de San Luis Potosí (LXIV Legislatura)",
+    "estado": "San Luis Potosí",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo"
+    ],
+    "pagina_busqueda_url": "https://congresosanluis.gob.mx/legislacion/constitucion",
+    "formato_resultado": "Tabla HTML con 1 enlace a PDF",
+    "notas": "Constitución Política del Estado de San Luis Potosí, última reforma 2026-09-28. El mismo PDF aparece también en el bloque lateral de todas las páginas de legislación.",
+    "creditos": 1
+  },
+  {
+    "url": "https://sjf2.scjn.gob.mx/busqueda-principal-tesis",
+    "grupo": "Federal y SLP",
+    "institucion": "Suprema Corte de Justicia de la Nación – Semanario Judicial de la Federación (Duodécima Época)",
+    "estado": "Federal",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página (el formulario de búsqueda se dibuja con JavaScript)"
+    ],
+    "pagina_busqueda_url": "https://sjf2.scjn.gob.mx/busqueda-principal-tesis",
+    "formato_resultado": "SPA que requiere JavaScript (resultados no visibles en el HTML extraído)",
+    "notas": "Solo se extrajo el menú: Tesis, Precedentes (Sentencias), Votos, Acuerdos, Otros, Sentencias de otros Tribunales, Temática, Índices, Apéndices, Informes, Jurisprudencia histórica. El campo de búsqueda no aparece en el markdown. Para automatizar probablemente haga falta su API interna o un navegador con JavaScript. Ayuda: sjfanexos.scjn.gob.mx/SJFSist/AyudaSJF.html.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.dgej.cjf.gob.mx/paginas/serviciosTramites.htm?pageName=servicios%2FlistaAcuerdos.htm",
+    "grupo": "Federal y SLP",
+    "institucion": "Dirección General de Estadística Judicial (DGEJ) – Consejo de la Judicatura Federal / Órgano de Administración Judicial (OAJ)",
+    "estado": "Federal",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.dgej.cjf.gob.mx/paginas/serviciosTramites.htm?pageName=servicios%2FlistaAcuerdos.htm",
+    "formato_resultado": "Contenido cargado dinámicamente (JavaScript o iframe): solo aparece el título 'Lista de acuerdos'",
+    "notas": "La página carga, pero la sección 'Lista de acuerdos' sale vacía en el HTML extraído, así que no se ven los campos de búsqueda. Otros enlaces: Consultas (cjf.gob.mx/consultas.htm), Gestión Judicial (DGGJ), criterios de la Comisión de Disciplina (appsrv.cjf.gob.mx/CRITERIOSSIBICD/public-search). Redes sociales ya rotuladas como 'OAJ'.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.serviciosenlinea.pjf.gob.mx/juicioenlinea",
+    "grupo": "Federal y SLP",
+    "institucion": "Portal de Servicios en Línea del Poder Judicial de la Federación (Órgano de Administración Judicial)",
+    "estado": "Federal",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": true,
+    "datos_que_solicita": [
+      "usuario registrado",
+      "certificado de firma electrónica (FIREL, Firma.judicial o e.firma, en .cer + .key o .pfx/.p12) y contraseña",
+      "número de folio (solo para 'Consulta tu Folio')"
+    ],
+    "pagina_busqueda_url": "https://www.serviciosenlinea.pjf.gob.mx/juicioenlinea/Home/Login",
+    "formato_resultado": "Aplicación web con sesión (expediente electrónico, notificaciones, acuerdos); no hay consulta pública de expedientes",
+    "notas": "Accesos por tipo de órgano: Juzgados de Distrito y Tribunales de Circuito (/Home/Login), Centro de Justicia Penal Federal (/Home/LoginFirel), Tribunales Laborales, Plenos Regionales, etc. Sin login: 'Consulta tu Folio' (/Presentacion/VerDemanda), sentencias en versión pública (/SentenciaVersionPublica/MenuSentencia) y 'Servicios jurisdiccionales' (/ServiciosJurisdiccionales/home). AVISO en portada: el Órgano de Administración Judicial NO reconoce ni autoriza servicios externos de consulta, monitoreo o acceso a expedientes electrónicos. Muy relevante para una herramienta de monitoreo.",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresoags.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Aguascalientes (LXVI Legislatura)",
+    "estado": "Aguascalientes",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://congresoags.gob.mx/agenda_legislativa/leyes",
+    "formato_resultado": "por confirmar (otras secciones descargan PDF vía /agenda_legislativa/descargar_pdf/<id>)",
+    "notas": "LXVI Legislatura 2024-2027 visible. Menú 'Leyes' / 'Nuestras leyes' apunta a /agenda_legislativa/leyes. También secciones de decretos, acuerdos legislativos y actas. Página grande (~100k caracteres).",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.cbcs.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Baja California Sur (XVII Legislatura)",
+    "estado": "Baja California Sur",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.cbcs.gob.mx/index.php/trabajos-legislativos/leyes",
+    "formato_resultado": "por confirmar (cada ley tiene página propia /index.php/cmply/<id>-<nombre>, sitio Joomla)",
+    "notas": "XVII Legislatura visible. Enlace 'Marco Jurídico Estatal' a /trabajos-legislativos/leyes; sección 'Modificaciones Recientes en Leyes' en portada; página aparte 'Leyes de Ingresos' (/index.php/leyes-de-ingresos) y 'Búsqueda de Información'.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresocam.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Poder Legislativo / H. Congreso del Estado de Campeche (LXV Legislatura)",
+    "estado": "Campeche",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://legislacion.congresocam.gob.mx/",
+    "formato_resultado": "por confirmar (subdominio dedicado)",
+    "notas": "WordPress. Menú 'Leyes' lleva a subdominio aparte legislacion.congresocam.gob.mx. También 'Biblioteca legislativa' (libros digitales). Existe 'Intranet' (no es para consulta de leyes).",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresochihuahua.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Chihuahua (LXVIII Legislatura)",
+    "estado": "Chihuahua",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.congresochihuahua.gob.mx/biblioteca",
+    "formato_resultado": "por confirmar",
+    "notas": "Portada sin enlace directo 'Leyes'; el acervo legislativo parece estar en la sección 'Biblioteca' (/biblioteca, también /biblioteca/procesoLegislativo.php). Legislatura 68 visible en rutas de comunicados. Usa dominio secundario congresochihuahua2.gob.mx para archivos.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresocdmx.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Congreso de la Ciudad de México (III Legislatura)",
+    "estado": "Ciudad de México",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.congresocdmx.gob.mx/marco-legal-cdmx-107-2.html",
+    "formato_resultado": "por confirmar",
+    "notas": "Portada con buscador temático '¿Qué estás buscando? → Una ley' y enlace 'Leyes de la CDMX', ambos a /marco-legal-cdmx-107-2.html. 'Marco Jurídico' (/marco-juridico-102-1.html) es la normativa interna del Congreso. Iniciativas en subdominio ciudadana.congresocdmx.gob.mx.",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresocoahuila.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Coahuila de Zaragoza (LXIII Legislatura)",
+    "estado": "Coahuila",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://congresocoahuila.gob.mx/coahuila/leyes.html",
+    "formato_resultado": "por confirmar (el sitio publica muchos documentos en PDF)",
+    "notas": "Redirige a https://www.congresocoahuila.gob.mx/coahuila/. Sexagésima Tercera Legislatura visible. Botón 'Leyes' en accesos directos → /coahuila/leyes.html. Algunos servicios (Archivo Histórico, Oficialía de Partes) en IPs sin HTTPS (201.150.2.x). Hay 'Sitio anterior' en /portal.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresocol.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Colima (por confirmar: no se obtuvo contenido)",
+    "estado": "Colima",
+    "status_code": null,
+    "cargo_ok": false,
+    "requiere_login": null,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": null,
+    "formato_resultado": "por confirmar",
+    "notas": "Falló: error de certificado SSL/TLS (vencido, autofirmado o mal configurado). No se reintentó con verificación TLS desactivada (acción no permitida en esta sesión). Requiere revisión manual en navegador.",
+    "creditos": 0
+  },
+  {
+    "url": "https://congresodurango.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Durango (LXX Legislatura)",
+    "estado": "Durango",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://congresodurango.gob.mx/trabajo-legislativo/legislacion-estatal/",
+    "formato_resultado": "PDF probable (leyes enlazadas en portada son PDF bajo /Archivos/legislacion/); listado por confirmar",
+    "notas": "WordPress. Menú Trabajo Legislativo → Legislación Estatal → 'Legislación Vigente' y 'Leyes Abrogadas' (/leyes-abrogadas/). Constitución y Ley Orgánica enlazadas directo en PDF. LXX Legislatura visible. Dictámenes de leyes de ingresos por año.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.cddiputados.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "por confirmar (no se obtuvo contenido)",
+    "estado": "por confirmar",
+    "status_code": null,
+    "cargo_ok": false,
+    "requiere_login": null,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": null,
+    "formato_resultado": "por confirmar",
+    "notas": "Falló dos veces: el dominio www.cddiputados.gob.mx no resuelve en DNS (posible dominio inexistente, mal escrito o caído). Por su posición en la lista (entre Durango y Guanajuato) quizá corresponda al Estado de México, pero no se pudo confirmar; verificar la URL correcta.",
+    "creditos": 0
+  },
+  {
+    "url": "https://www.congresogto.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Congreso del Estado de Guanajuato",
+    "estado": "Guanajuato",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "palabra clave (buscador '¿Qué quieres buscar?' en portada)",
+      "o ninguno: listado por tipo (Leyes, Códigos, Reglamentos, etc.)"
+    ],
+    "pagina_busqueda_url": "https://www.congresogto.gob.mx/legislacion",
+    "formato_resultado": "por confirmar (documentos alojados en PDF en congreso-gto.s3.amazonaws.com)",
+    "notas": "Portada describe el 'Cuerpo normativo' clasificado en Leyes, Códigos, Reglamentos, Estatutos y Lineamientos, Decretos e Ingresos Municipales. Enlaces /legislacion, /leyes, /codigos, /pagina_leyes (reformas integrales), /constitucion-politica-del-estado-de-guanajuato. Expedientes legislativos digitales por iniciativa. Página grande (~80k caracteres).",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresogro.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Congreso del Estado de Guerrero (LXIV Legislatura)",
+    "estado": "Guerrero",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo por categoría"
+    ],
+    "pagina_busqueda_url": "https://congresogro.gob.mx/legislacion/leyes-ordinarias.php",
+    "formato_resultado": "PDF probable (Constitución y Ley Reglamentaria enlazadas como PDF bajo /legislacion/); listados por confirmar",
+    "notas": "Redirige a /inicio/ (WordPress). Menú Legislación: Leyes Ordinarias, Leyes Orgánicas (/legislacion/leyes-organicas.php), Códigos (/legislacion/codigos.php), Leyes de Ingreso y Tablas de Valores por año. 'Gaceta Diputados' en sialgro.congresogro.com pide login (uso interno, no necesario para leyes).",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congreso-hidalgo.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Congreso del Estado Libre y Soberano de Hidalgo (LXVI Legislatura)",
+    "estado": "Hidalgo",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://congresohidalgo.gob.mx/acervo/public",
+    "formato_resultado": "por confirmar (aplicación 'acervo' aparte del WordPress)",
+    "notas": "Redirige al dominio sin guion: congresohidalgo.gob.mx. WordPress; menú 'Acervo Legislativo' → /acervo/public (Transparencia también dentro de /acervo/public/transparencia). Algunos PDF siguen en el dominio con guion (congreso-hidalgo.gob.mx/carrusel/...).",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresojal.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Jalisco (LXIV Legislatura)",
+    "estado": "Jalisco",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://congresoweb.congresojal.gob.mx/bibliotecavirtual/",
+    "formato_resultado": "por confirmar",
+    "notas": "Drupal 7. Menú Biblioteca Virtual → 'Leyes Estatales' en subdominio congresoweb.congresojal.gob.mx/bibliotecavirtual/. Trabajo legislativo (iniciativas, diario de debates) en INFOLEJ (infolej.congresojal.gob.mx). Buscador general del sitio en portada. Varios enlaces aún en http sin cifrar. Intranet y recibos de nómina con login (uso interno).",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresomich.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Michoacán (por confirmar: no se obtuvo contenido)",
+    "estado": "Michoacán",
+    "status_code": null,
+    "cargo_ok": false,
+    "requiere_login": null,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": null,
+    "formato_resultado": "por confirmar",
+    "notas": "Falló dos veces con ERR_TUNNEL_CONNECTION_FAILED (error interno del proxy de Firecrawl al conectar). Puede ser bloqueo geográfico/firewall del sitio o falla temporal; reintentar más tarde o revisar manualmente. El agente principal lo intentó una tercera vez y volvió a fallar con ERR_TUNNEL_CONNECTION_FAILED; puede que el sitio bloquee accesos desde fuera de México o que falle el proxy de Firecrawl. 0 créditos.",
+    "creditos": 0
+  },
+  {
+    "url": "https://congresomorelos.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado Libre y Soberano de Morelos (LVI Legislatura)",
+    "estado": "Morelos",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "posible filtro por categoría: Legislación Abrogada, Decreto, Tratados Internacionales, Ley, Marco Jurídico, Constitución, Reglamento, Paquete Fiscal (por confirmar)"
+    ],
+    "pagina_busqueda_url": null,
+    "formato_resultado": "por confirmar",
+    "notas": "WordPress. La portada muestra una tarjeta 'Leyes y Códigos' con esas categorías pero sin enlace capturado (probablemente generado por JavaScript o es solo texto). Candidatos a revisar: /documentos-legislativos/ y /normatividad/ (esta última parece estar bajo finanzas/transparencia). Texto de portada dice 'ULVI LEGISLATURA' (LVI Legislatura).",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresonayarit.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "No identificable (página por defecto del servidor)",
+    "estado": "Nayarit (por el dominio; la página no lo confirma)",
+    "status_code": 200,
+    "cargo_ok": false,
+    "requiere_login": null,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": null,
+    "formato_resultado": "no determinado",
+    "notas": "Responde 200 pero solo muestra la página por defecto 'Success! Your new web server is ready to use.' Sin enlaces. Redirigió a http:// (sin HTTPS). El sitio real del Congreso de Nayarit debe estar en otro dominio; por confirmar.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.hcnl.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Nuevo León",
+    "estado": "Nuevo León",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo"
+    ],
+    "pagina_busqueda_url": "https://www.hcnl.gob.mx/trabajo_legislativo/leyes/",
+    "formato_resultado": "Listado HTML con página por ley (documento descargable por confirmar)",
+    "notas": "LXXVII Legislatura (logo/rutas 'lxxvii'). Menú Leyes con subsecciones: Leyes, Códigos, Reglamentos, Acuerdos, Decretos, Paquete Fiscal, Leyes Abrogadas. Portada lista 'Últimas Reformas de Leyes' con fecha de reforma. Meta robots contradictorio (noindex e index,follow).",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresooaxaca.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado Libre y Soberano de Oaxaca",
+    "estado": "Oaxaca",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.congresooaxaca.gob.mx/legislaciones/legislacion_estatal.html",
+    "formato_resultado": "por confirmar (documentos del sitio suelen ser PDF)",
+    "notas": "LXVI Legislatura (visible en aviso de sesión). Menú 'Legislaciones': Federal (enlace a diputados.gob.mx), Estatal, Municipal, Marco normativo. También sección de Reformas Constitucionales y Biblioteca y Archivo con PDFs históricos.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresopuebla.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado Libre y Soberano de Puebla",
+    "estado": "Puebla",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.congresopuebla.gob.mx/index.php?option=com_docman&task=cat_view&gid=4",
+    "formato_resultado": "Repositorio de documentos (Joomla DOCman) por categorías; archivos por confirmar (probablemente PDF/Word)",
+    "notas": "LXII Legislatura (título). Sección 'Legislación: Leyes, Códigos' (gid=4) y enlace 'Leyes' (gid=25). Página grande (~50 mil caracteres, 152 enlaces). Obligaciones de transparencia enlazan a la PNT del INAI.",
+    "creditos": 1
+  },
+  {
+    "url": "https://legislaturaqueretaro.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "No verificada (sin contenido)",
+    "estado": "Querétaro (por el dominio; no confirmado)",
+    "status_code": null,
+    "cargo_ok": false,
+    "requiere_login": null,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": null,
+    "formato_resultado": "no determinado",
+    "notas": "Falló 2 veces con ERR_TUNNEL_CONNECTION_FAILED (error de proxy interno de Firecrawl). No se reintentó más. Por revisar en otra ocasión o con otro proxy. El agente principal lo intentó una tercera vez y volvió a fallar con ERR_TUNNEL_CONNECTION_FAILED; puede que el sitio bloquee accesos desde fuera de México o que falle el proxy de Firecrawl. 0 créditos.",
+    "creditos": 0
+  },
+  {
+    "url": "https://www.congresoqroo.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Poder Legislativo del Estado de Quintana Roo",
+    "estado": "Quintana Roo",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo"
+    ],
+    "pagina_busqueda_url": "https://www.congresoqroo.gob.mx/leyes/",
+    "formato_resultado": "Listado HTML con enlaces a PDF (documentos.congresoqroo.gob.mx / Google Cloud Storage)",
+    "notas": "XVIII Legislatura. Sección 'Marco Normativo': Constitución Estatal (PDF), Leyes Estatales (/leyes/), Códigos Estatales (/codigos/). Los nombres de PDF incluyen legislatura y fecha de reforma (p. ej. L176-XVIII-20260622). También hay micrositio de Datos Abiertos y Biblioteca.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresosinaloa.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado de Sinaloa",
+    "estado": "Sinaloa",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.congresosinaloa.gob.mx/leyes-estatales/",
+    "formato_resultado": "por confirmar (sitio WordPress; documentos probablemente PDF)",
+    "notas": "LXV (65) Legislatura. Menú 'Actividad Legislativa > Leyes Estatales'. También 'Estructura y Normatividad', Biblioteca e Instituto de Investigaciones Parlamentarias (iip.congresosinaloa.gob.mx). La página incluye reCAPTCHA (en formulario de comentarios), pero la portada cargó sin bloqueo.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresoson.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "No verificada (sin contenido)",
+    "estado": "Sonora (por el dominio; no confirmado)",
+    "status_code": null,
+    "cargo_ok": false,
+    "requiere_login": null,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": null,
+    "formato_resultado": "no determinado",
+    "notas": "Falló por error de certificado SSL/TLS (vencido, autofirmado o mal configurado). Un reintento con skipTlsVerification fue bloqueado por permisos y no se ejecutó. Un navegador normal probablemente mostrará advertencia de seguridad.",
+    "creditos": 0
+  },
+  {
+    "url": "https://congresotabasco.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado Libre y Soberano de Tabasco",
+    "estado": "Tabasco",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://congresotabasco.gob.mx/leyes/",
+    "formato_resultado": "por confirmar (sitio WordPress/Divi; documentos probablemente PDF)",
+    "notas": "LXV (Sexagésima Quinta) Legislatura. 'Trabajo Legislativo > Marco Jurídico Estatal' apunta a /leyes/. También 'Normatividad Interna' (/normatividad/). Enlace a sitio de la LXIII Legislatura.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresotamaulipas.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "H. Congreso del Estado Libre y Soberano de Tamaulipas",
+    "estado": "Tamaulipas",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo",
+      "palabra clave (Buscador Legislativo, por confirmar)"
+    ],
+    "pagina_busqueda_url": "https://www.congresotamaulipas.gob.mx/LegislacionEstatal/LegislacionVigente/Vigente.asp?idtipoArchivo=1",
+    "formato_resultado": "Listado HTML (ASP clásico); archivos por confirmar",
+    "notas": "LXVI Legislatura (imágenes 'LEG66'). Secciones: Legislación Vigente, Constituciones, Disposiciones Fiscales y un 'Buscador Legislativo' (/TrabajoLegislativo/BuscadorLegislativo/Buscador.asp). Hay 'Acceso Interno' con login, solo para personal; la legislación es pública. Enlaza al Periódico Oficial del Estado.",
+    "creditos": 1
+  },
+  {
+    "url": "https://congresodetlaxcala.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Congreso del Estado de Tlaxcala",
+    "estado": "Tlaxcala",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://congresodetlaxcala.gob.mx/legislacion/",
+    "formato_resultado": "por confirmar (sitio WordPress; documentos probablemente PDF)",
+    "notas": "LXV Legislatura (comunicados). Página muy grande (~66 mil caracteres, 399 enlaces). Enlaces 'Legislación' (/legislacion/) y 'Leyes del Estado de Tlaxcala' (/leyes-del-estado-tlaxcala/), además de páginas de 'marco jurídico' por comisión (salud, electoral, municipal, etc.).",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.legisver.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Congreso del Estado de Veracruz",
+    "estado": "Veracruz",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.legisver.gob.mx/Inicio.php?p=compendio",
+    "formato_resultado": "por confirmar",
+    "notas": "LXVII Legislatura (2024-2027). En la portada hay un icono 'Leyes y Códigos' pero sin enlace visible en el HTML extraído (probablemente se abre con JavaScript); por eso la URL indicada (Compendio Legislativo) es la mejor candidata encontrada en los enlaces, por confirmar. También existe 'Marco Jurídico' (Inicio.php?p=marco). Hay Intranet y Declara con login, solo para personal.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresoyucatan.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Congreso del Estado de Yucatán",
+    "estado": "Yucatán",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "no visible en esta página"
+    ],
+    "pagina_busqueda_url": "https://www.congresoyucatan.gob.mx/legislacion",
+    "formato_resultado": "por confirmar",
+    "notas": "LXIV Legislatura. Menú principal 'LEGISLACIÓN' (/legislacion). Banner de cookies (no se aceptó) y reCAPTCHA en el buzón de contacto, sin bloqueo de la portada. Enlaza también a 'Digestum' del Poder Judicial de Yucatán (poderjudicialyucatan.gob.mx/digestum/), otro compilado normativo.",
+    "creditos": 1
+  },
+  {
+    "url": "https://www.congresozac.gob.mx/",
+    "grupo": "Congresos estatales",
+    "institucion": "Poder Legislativo del Estado de Zacatecas",
+    "estado": "Zacatecas",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "ninguno: listado directo por categoría"
+    ],
+    "pagina_busqueda_url": "https://www.congresozac.gob.mx/65/todojuridico&cat=LEY",
+    "formato_resultado": "Listado HTML por categoría; archivos por confirmar",
+    "notas": "LXV Legislatura. Redirige a /65/inicio. Sección 'Sistema Estatal Normativo' (/65/esen) con categorías: Constitución, Leyes, Códigos, Normatividad Interna y Leyes de Ingresos Municipales (todojuridico&cat=...). Hay 'Iniciar Sesión' solo para servicios internos. La portada publica datos de contacto de diputados (no copiados).",
+    "creditos": 1
+  }
+]

@@ -1,0 +1,76 @@
+materia_id,materia,area_value,juzgado,codigo_pdf
+1,Presidencia,1,Presidencia,P
+2,Salas,2,Primera Sala,1S
+2,Salas,3,Segunda Sala,2S
+2,Salas,4,Tercera Sala,3S
+2,Salas,5,Cuarta Sala,4S
+2,Salas,6,Quinta Sala Civil,5SC
+2,Salas,7,Quinta Sala Penal,5SP
+3,Juzgados Civiles,8,Primero Civil,1C
+3,Juzgados Civiles,9,Segundo Civil,2C
+3,Juzgados Civiles,10,Tercero Civil,3C
+3,Juzgados Civiles,11,Cuarto Civil,4C
+4,Juzgados Mercantiles,12,Primero Mercantil,1ME
+4,Juzgados Mercantiles,13,Segundo Mercantil,2ME
+4,Juzgados Mercantiles,14,Tercero Mercantil,3ME
+4,Juzgados Mercantiles,15,Cuarto Mercantil,4ME
+5,Juzgados Familiares,16,Primero Familiar,1F
+5,Juzgados Familiares,17,Segundo Familiar,2F
+5,Juzgados Familiares,18,Tercero Familiar,3F
+5,Juzgados Familiares,19,Cuarto Familiar,4F
+5,Juzgados Familiares,20,Quinto Familiar,5F
+5,Juzgados Familiares,22,Sexto Familiar,6F
+5,Juzgados Familiares,23,Séptimo Familiar,7F
+6,Juzgados Penales,24,Segundo Penal,2P
+6,Juzgados Penales,25,Quinto Penal,5P
+6,Juzgados Penales,27,Séptimo Penal,7P
+7,Juzgados en el Interior del Estado,28,1° Civil Matehuala (Lista Civil),1MC
+7,Juzgados en el Interior del Estado,29,1° Civil Matehuala (Lista Penal),1MP
+7,Juzgados en el Interior del Estado,30,1° Familiar Matehuala (Lista Civil),2MC
+7,Juzgados en el Interior del Estado,31,1° Familiar Matehuala (Lista Penal),2MP
+7,Juzgados en el Interior del Estado,32,1° Civil Rioverde (Lista Civil),1RC
+7,Juzgados en el Interior del Estado,33,1° Civil Rioverde (Lista Penal),1RP
+7,Juzgados en el Interior del Estado,34,1° Familiar Rioverde (Lista Civil),2RC
+7,Juzgados en el Interior del Estado,35,1° Familiar Rioverde (Lista Penal),2RP
+7,Juzgados en el Interior del Estado,36,1° Civil Cd. Valles (Lista Civil),1VC
+7,Juzgados en el Interior del Estado,37,1° Civil Cd. Valles (Lista Penal),1VP
+7,Juzgados en el Interior del Estado,38,1° Familiar Cd. Valles (Lista Civil),2VC
+7,Juzgados en el Interior del Estado,39,1° Familiar Cd. Valles (Lista Penal),2VP
+7,Juzgados en el Interior del Estado,40,2° Familiar Cd. Valles (Lista Civil),3VC
+7,Juzgados en el Interior del Estado,41,2° Familiar Cd. Valles (Lista Penal),3VP
+7,Juzgados en el Interior del Estado,42,Cerritos Civil,CC
+7,Juzgados en el Interior del Estado,43,Cerritos Penal,CP
+7,Juzgados en el Interior del Estado,44,Guadalcázar Civil,GC
+7,Juzgados en el Interior del Estado,45,Guadalcázar Penal,GP
+7,Juzgados en el Interior del Estado,46,Cd. del Maíz Civil,CMC
+7,Juzgados en el Interior del Estado,47,Cd. del Maíz Penal,CMP
+7,Juzgados en el Interior del Estado,48,Tancanhuitz Civil,TNC
+7,Juzgados en el Interior del Estado,49,Tancanhuitz Penal,TNP
+7,Juzgados en el Interior del Estado,50,Tamazunchale Civil,TMC
+7,Juzgados en el Interior del Estado,51,Tamazunchale Penal,TMP
+7,Juzgados en el Interior del Estado,52,Venado Civil,VC
+7,Juzgados en el Interior del Estado,53,Venado Penal,VP
+7,Juzgados en el Interior del Estado,54,Santa María Civil,SMC
+7,Juzgados en el Interior del Estado,55,Santa María Penal,SMP
+7,Juzgados en el Interior del Estado,56,Salinas Civil,SC
+7,Juzgados en el Interior del Estado,57,Salinas Penal,SP
+7,Juzgados en el Interior del Estado,58,Cárdenas Civil,CAC
+7,Juzgados en el Interior del Estado,59,Cárdenas Penal,CAP
+7,Juzgados en el Interior del Estado,60,Soledad de G.S. Civil,SGC
+7,Juzgados en el Interior del Estado,61,Soledad de G.S. Penal,SGP
+8,Juzgados Menores,74,Soledad de G.S. Civil (repetido),SGC
+8,Juzgados Menores,75,Soledad de G.S. Penal (repetido),SGP
+9,Oralidad Mercantil,62,Juzgado Oral Mercantil,SGOM
+10,Tribunal Laboral,64,Tribunal Laboral,TLAB
+11,Juzgados de Ejecución,65,1° de Ejecución de Penas y Medidas de Seguridad,EP
+11,Juzgados de Ejecución,66,2° de Ejecución de Penas y Medidas de Seguridad,JSPM
+11,Juzgados de Ejecución,69,Ejecución de Penas y Medidas de Seguridad Cd. Valles,EPV
+11,Juzgados de Ejecución,70,Ejecución para Menores,EMP
+12,Juzgados Especializados,72,Especializado en Divorcio,EDV
+12,Juzgados Especializados,73,Especializado para Menores,ESMP
+13,Centro Integral de Justicia Penal,76,Sala Sede San Luis Potosí,CJSLP
+13,Centro Integral de Justicia Penal,77,Sala Sede Matehuala,CJM
+13,Centro Integral de Justicia Penal,78,Sala Sede Rioverde,CJR
+13,Centro Integral de Justicia Penal,79,Sala Sede Ciudad Valles,CJV
+13,Centro Integral de Justicia Penal,80,Sala Sede Tamazunchale,CJTAM
+13,Centro Integral de Justicia Penal,81,Sala Sede Tancanhuitz,CJTAN

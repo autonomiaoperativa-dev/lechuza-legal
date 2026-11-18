@@ -1,0 +1,37 @@
+[
+  {
+    "url": "https://www.stjslp.gob.mx/Acuerdos/Index",
+    "grupo": "Federal y SLP",
+    "institucion": "Poder Judicial del Estado de San Luis Potosí - Listas de Acuerdos",
+    "estado": "San Luis Potosí",
+    "status_code": 200,
+    "cargo_ok": true,
+    "requiere_login": false,
+    "datos_que_solicita": [
+      "materia",
+      "juzgado o sala",
+      "fecha"
+    ],
+    "pagina_busqueda_url": "https://www.stjslp.gob.mx/Acuerdos/Index",
+    "formato_resultado": "PDF por juzgado y día: /Archivos/Listas/tradicionales/<CÓDIGO><DDMMAA>.pdf",
+    "notas": "CONECTADO AL MONITOR. Sin robots.txt. 75 listas diarias publicadas a las 8:00.",
+    "creditos": 0
+  },
+  {
+    "url": "https://www.buholegal.com/actividadjudicial/slp/",
+    "grupo": "Federal y SLP",
+    "institucion": "Buholegal (servicio privado)",
+    "estado": "Nacional",
+    "status_code": 200,
+    "cargo_ok": false,
+    "requiere_login": true,
+    "datos_que_solicita": [
+      "cuenta de usuario",
+      "número de expediente + juzgado, o nombre"
+    ],
+    "pagina_busqueda_url": "",
+    "formato_resultado": "Plataforma privada",
+    "notas": "NO SE USA: pide iniciar sesión y su robots.txt prohíbe robots de IA en todo el sitio. Solo sirve como referencia para comparar (manual).",
+    "creditos": 2
+  }
+]

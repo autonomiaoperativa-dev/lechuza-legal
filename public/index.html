@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lechuza Legal</title>
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+<header class="top">
+  <div class="marca">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--acento)"/><circle cx="11" cy="14" r="4.5" fill="#fff"/><circle cx="21" cy="14" r="4.5" fill="#fff"/><circle cx="11" cy="14" r="2" fill="#16324a"/><circle cx="21" cy="14" r="2" fill="#16324a"/><path d="M14 20 L16 23 L18 20 Z" fill="#f2b84b"/></svg>
+    <div><strong>Lechuza Legal</strong><span class="sub">Versión de prueba · listas de acuerdos</span></div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" class="tab activo" data-tab="buscar">Buscar</button>
+    <button role="tab" class="tab" data-tab="comparar">Comparar con Buholegal</button>
+    <button role="tab" class="tab" data-tab="fuentes">Fuentes</button>
+    <button role="tab" class="tab" data-tab="ayuda">Cómo funciona</button>
+  </nav>
+</header>
+
+<main>
+<!-- ============ BUSCAR ============ -->
+<section id="buscar" class="panel activo">
+  <div class="rejilla">
+    <form id="form" class="tarjeta" autocomplete="off">
+      <h2>San Luis Potosí · Listas de acuerdos</h2>
+      <p class="nota">Fuente oficial: <a href="https://www.stjslp.gob.mx/Acuerdos/Index" target="_blank" rel="noopener">Poder Judicial del Estado de SLP</a>. Se publican a las 8:00 de cada día hábil.</p>
+
+      <label class="campo">Expedientes <span class="ayuda">uno por línea, ej. 954/2014</span>
+        <textarea id="expedientes" rows="4" placeholder="954/2014&#10;1221/2013"></textarea>
+      </label>
+      <label class="campo">Nombres <span class="ayuda">uno por línea: persona o empresa</span>
+        <textarea id="nombres" rows="3" placeholder="Nombre Apellido Apellido"></textarea>
+      </label>
+      <label class="check"><input type="checkbox" id="enTexto"> Buscar los nombres también dentro del texto del acuerdo <span class="ayuda">(no solo en las partes)</span></label>
+
+      <div class="fechas">
+        <label class="campo">Desde <input type="date" id="desde" required></label>
+        <label class="campo">Hasta <input type="date" id="hasta" required></label>
+      </div>
+      <div class="atajos">
+        <button type="button" class="chip" data-dias="1">Último día hábil</button>
+        <button type="button" class="chip" data-dias="5">Últimos 5</button>
+        <button type="button" class="chip" data-dias="10">Últimos 10</button>
+      </div>
+
+      <div class="campo">
+        <div class="fila-tit">Juzgados <span id="contSel" class="ayuda"></span></div>
+        <input type="search" id="filtroJ" placeholder="Filtrar juzgados…" aria-label="Filtrar juzgados">
+        <div id="juzgados" class="juzgados"></div>
+      </div>
+
+      <label class="incog">
+        <input type="checkbox" id="incognito" role="switch">
+        <span class="interruptor" aria-hidden="true"></span>
+        <span><strong>Búsqueda incógnito</strong><span class="ayuda">No se guarda nada en esta computadora: ni las listas descargadas ni lo que buscaste. Al cerrar o borrar, no queda rastro.</span></span>
+      </label>
+
+      <p id="calculo" class="nota"></p>
+      <button type="submit" id="btnBuscar" class="primario">Buscar</button>
+      <p id="error" class="error" role="alert"></p>
+    </form>
+
+    <div class="resultados">
+      <div class="tarjeta" id="progresoCaja" hidden>
+        <div class="fila-tit"><strong id="progresoTxt">Consultando…</strong><button id="btnCancelar" class="enlace" type="button">Cancelar</button></div>
+        <div class="barra"><div id="barra"></div></div>
+      </div>
+      <div class="kpis" id="kpis" hidden>
+        <div class="kpi"><span id="kListas">0</span>listas consultadas</div>
+        <div class="kpi"><span id="kSin">0</span>sin lista ese día</div>
+        <div class="kpi"><span id="kErr">0</span>con error</div>
+        <div class="kpi destacado"><span id="kHall">0</span>coincidencias</div>
+      </div>
+      <div class="tarjeta" id="resCaja" hidden>
+        <div class="fila-tit"><h2>Coincidencias <span id="marcaIncog" class="etq incog-etq" hidden>incógnito</span></h2>
+          <span><button id="btnCsv" class="secundario" type="button">Descargar CSV</button> <button id="btnBorrar" class="secundario" type="button">Borrar resultados</button></span></div>
+        <div id="resultados"></div>
+        <details class="consultadas"><summary>Ver listas consultadas</summary><div id="consultadas"></div></details>
+      </div>
+      <div class="vacio tarjeta" id="vacio">
+        <p><strong>Escribe un expediente o un nombre, elige fechas y juzgados, y presiona Buscar.</strong></p>
+        <p class="nota">El programa descarga el PDF oficial de cada juzgado y día, lo convierte en texto, lo separa por expediente y busca lo que escribiste. Lo ya descargado se guarda y no se vuelve a pedir.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPARAR ============ -->
+<section id="comparar" class="panel">
+  <div class="tarjeta">
+    <h2>Comparar contra Buholegal</h2>
+    <p class="nota">1) Haz una búsqueda en la pestaña <em>Buscar</em>. 2) Busca lo mismo (mismos expedientes, juzgados y fechas) en tu cuenta de Buholegal. 3) Pega aquí lo que Buholegal reporta: basta con que cada línea tenga el número de expediente (NNN/AAAA); si además trae la fecha (dd/mm/aaaa o aaaa-mm-dd) se compara por expediente y día.</p>
+    <textarea id="buho" rows="8" placeholder="954/2014  17/07/2024&#10;1221/2013 17/07/2024"></textarea>
+    <button id="btnComparar" class="primario" type="button">Comparar</button>
+    <div id="comparacion"></div>
+  </div>
+</section>
+
+<!-- ============ FUENTES ============ -->
+<section id="fuentes" class="panel">
+  <div class="tarjeta">
+    <div class="fila-tit"><h2>Fuentes jurídicas investigadas</h2><input type="search" id="filtroF" placeholder="Filtrar por estado, institución…" aria-label="Filtrar fuentes"></div>
+    <p class="nota">Lo que pide cada sitio para consultar, según la revisión del 18-11-2026. Solo SLP (listas de acuerdos) está conectado al buscador por ahora.</p>
+    <div id="tablaFuentes" class="tabla-scroll"></div>
+  </div>
+</section>
+
+<!-- ============ AYUDA ============ -->
+<section id="ayuda" class="panel">
+  <div class="tarjeta prosa">
+    <h2>Cómo funciona</h2>
+    <ol>
+      <li><strong>Descarga:</strong> por cada juzgado y día hábil pide al sitio oficial <code>…/Archivos/Listas/tradicionales/CÓDIGO+DDMMAA.pdf</code>. Si no existe, se marca “sin lista” (día inhábil o juzgado sin acuerdos).</li>
+      <li><strong>Lectura:</strong> convierte el PDF en texto y lo corta cada vez que empieza un “Expediente:”, “Causa Penal”, “Toca” o “Carpeta”.</li>
+      <li><strong>Búsqueda:</strong> compara el número (sin ceros a la izquierda) y los nombres (sin acentos ni mayúsculas). Si un expediente no aparece como inicio de un acuerdo, también lo busca dentro del texto y lo marca como “mención en texto”.</li>
+      <li><strong>Comparación:</strong> la pestaña <em>Comparar</em> muestra qué encontró este programa y Buholegal no, y al revés.</li>
+    </ol>
+    <h3>Privacidad y búsqueda incógnito</h3>
+    <ul>
+      <li>En cualquier modo, los nombres y expedientes que escribes <strong>nunca se envían</strong> al Poder Judicial: el programa solo descarga la lista completa del juzgado y día, y busca en tu computadora.</li>
+      <li>En modo normal se guardan las listas descargadas (documentos públicos) para que la siguiente búsqueda sea más rápida. Lo que escribes no se guarda.</li>
+      <li>En modo <strong>incógnito</strong> no se escribe nada en disco: ni listas ni resultados. Puede tardar más porque descarga todo de nuevo (salvo lo que ya estaba guardado de antes).</li>
+      <li>El sitio oficial sí ve, como cualquier visitante, que tu conexión descargó ciertas listas públicas.</li>
+    </ul>
+    <h3>Límites de esta versión</h3>
+    <ul>
+      <li>Máximo 80 listas por búsqueda (juzgados × días). Algunas listas pesan más de 10 MB y tardan.</li>
+      <li>Las listas de asuntos reservados (“SECRETO”) solo traen números, sin partes.</li>
+      <li>A veces el PDF separa dígitos (“37 8/2026”); esos casos pueden no encontrarse.</li>
+      <li>Un nombre igual no prueba que sea la misma persona (homónimos).</li>
+      <li>Es una herramienta de apoyo: no sustituye la revisión del expediente oficial. Información, no asesoría legal.</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
