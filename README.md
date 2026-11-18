@@ -6,7 +6,14 @@ resultados contra los de Buholegal.
 
 Es información de apoyo, no asesoría legal, y no sustituye la revisión del expediente oficial.
 
-## Cómo instalarlo y abrirlo
+## Usarlo en línea (sin instalar nada)
+
+**https://lechuza-legal.onrender.com**
+
+Está en el plan gratuito de Render: si nadie la usa en 15 minutos se "duerme", y la primera visita
+después tarda cerca de 1 minuto en abrir. Luego funciona normal.
+
+## Instalarlo en tu computadora (opcional)
 
 1. Instala **Node.js** (versión LTS) desde https://nodejs.org, si no lo tienes.
 2. Descarga este proyecto: botón verde **Code → Download ZIP** en GitHub, y descomprímelo.
