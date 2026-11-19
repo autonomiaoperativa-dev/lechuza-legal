@@ -138,3 +138,6 @@ body.incognito .primario { background: #5b4b8a; }
 .novedad.nueva { border-left: 3px solid var(--acento2); padding-left: 8px; }
 .novedad .exp { font-weight: 700; }
 th .ordenar { border: 0; background: none; color: var(--suave); font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
+.barra-sel { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--fondo); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+tr.pausada td { opacity: .55; }
+tr.pausada td:last-child, tr.pausada td:nth-last-child(2) { opacity: 1; }

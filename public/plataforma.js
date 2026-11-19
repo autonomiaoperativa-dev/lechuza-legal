@@ -247,25 +247,64 @@
     $('#nExp').textContent = `(${todas.filter((a) => a.tipo === 'expediente').length})`;
     $('#nNom').textContent = `(${todas.filter((a) => a.tipo === 'nombre').length})`;
     document.querySelectorAll('.seg[data-tipo]').forEach((b) => b.classList.toggle('activo', b.dataset.tipo === tipoLista));
-    const val = (a, col) => ({ etiqueta: a.etiqueta || '', juzgado: a.juzgados ? nombresJ(a.juzgados.split(','), 1) : 'Todos', valor: a.valor,
-      ultima: a.ultima_novedad || '', novedades: a.novedades_total, correo: a.correo || '' })[col];
+    const val = (a, col) => ({ etiqueta: (a.etiqueta || '').toLowerCase(), juzgado: a.juzgados ? nombresJ(a.juzgados.split(','), 1) : 'Todos', valor: norm(a.valor),
+      creada: a.creada || '', ultima: a.ultima_novedad || '', novedades: a.novedades_total, correo: a.correo || '' })[col];
     const lista = todas.filter((a) => a.tipo === tipoLista)
-      .filter((a) => !q || norm([a.etiqueta, a.valor, a.correo, a.juzgados ? a.juzgados.split(',').map(nombreJ) : 'todos'].flat().join(' ')).includes(q))
+      .filter((a) => !q || norm([a.etiqueta, a.valor, a.correo, 'san luis potosi', a.juzgados ? a.juzgados.split(',').map(nombreJ) : 'todos'].flat().join(' ')).includes(q))
       .sort((a, b) => { const x = val(a, orden.col), y = val(b, orden.col); return (x > y ? 1 : x < y ? -1 : 0) * orden.dir; });
+    // quitar de la selección lo que ya no se ve
+    const visibles = new Set(lista.map((a) => a.id));
+    for (const id of [...seleccionadas]) if (!visibles.has(id)) seleccionadas.delete(id);
     const th = (col, txt) => `<th><button type="button" class="ordenar" data-col="${col}">${txt}${orden.col === col ? (orden.dir > 0 ? ' ▲' : ' ▼') : ''}</button></th>`;
+    const fmtD = (iso) => iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    const juzTxt = (a) => esc(a.juzgados ? nombresJ(a.juzgados.split(','), 2) : 'Todos los juzgados');
+    const esNombre = tipoLista === 'nombre';
+    const todasSel = lista.length && lista.every((a) => seleccionadas.has(a.id));
+    $('#barraSel').hidden = !seleccionadas.size;
+    $('#nSel').textContent = `${seleccionadas.size} seleccionada${seleccionadas.size === 1 ? '' : 's'}`;
     $('#tablaAlertas').innerHTML = !lista.length ? `<p class="nota">No hay alertas por ${tipoLista}.</p>` :
-      `<table><thead><tr>${th('etiqueta', 'Nombre')}${th('juzgado', 'Juzgado')}${th('valor', tipoLista === 'expediente' ? 'Expediente' : 'Persona')}${th('ultima', 'Última novedad')}${th('novedades', 'Novedades')}${th('correo', 'Correo')}<th>Activa</th><th></th></tr></thead><tbody>${
-        lista.map((a) => `<tr data-id="${a.id}">
-          <td>${esc(a.etiqueta || '—')}</td>
-          <td>${esc(a.juzgados ? nombresJ(a.juzgados.split(','), 2) : 'Todos')}</td>
-          <td><strong>${esc(a.valor)}</strong>${a.en_texto ? '<br><span class="ayuda">también en el texto</span>' : ''}</td>
+      `<p class="nota">${plural(lista.length, 'alerta')} por ${tipoLista}</p>
+      <table><thead><tr><th><input type="checkbox" id="selTodas" ${todasSel ? 'checked' : ''} aria-label="Seleccionar todas"></th>${
+        esNombre
+          ? th('valor', 'Persona') + th('juzgado', 'Entidad') + th('creada', 'Fecha de creación')
+          : th('etiqueta', 'Nombre') + th('juzgado', 'Juzgado') + th('valor', 'Expediente') + th('creada', 'Creada')
+      }${th('ultima', 'Última novedad')}${th('novedades', 'Novedades')}${th('correo', 'Correo')}<th>Activa</th><th></th></tr></thead><tbody>${
+        lista.map((a) => `<tr data-id="${a.id}" class="${a.activa ? '' : 'pausada'}">
+          <td><input type="checkbox" class="sel" ${seleccionadas.has(a.id) ? 'checked' : ''} aria-label="Seleccionar alerta"></td>
+          ${esNombre
+            ? `<td><strong>${esc(a.valor)}</strong>${a.etiqueta ? `<br><span class="ayuda">${esc(a.etiqueta)}</span>` : ''}${a.en_texto ? '<br><span class="ayuda">también en el texto</span>' : ''}</td>
+               <td>San Luis Potosí<br><span class="ayuda">${juzTxt(a)}</span></td>
+               <td>${esc(fmtD(a.creada))}</td>`
+            : `<td>${esc(a.etiqueta || '—')}</td>
+               <td>${juzTxt(a)}</td>
+               <td><strong>${esc(a.valor)}</strong></td>
+               <td>${esc(fmtD(a.creada))}</td>`}
           <td>${a.ultima_novedad ? esc(fmtFH(a.ultima_novedad)) : '<span class="ayuda">—</span>'}${a.sin_ver ? ` <span class="badge">${a.sin_ver}</span>` : ''}<br><span class="ayuda">revisada hasta ${esc(fmtF(a.revisada_hasta))}</span></td>
           <td>${a.novedades_total}</td>
           <td>${esc(a.correo || '—')}</td>
           <td><input type="checkbox" class="activa" ${a.activa ? 'checked' : ''} aria-label="Alerta activa"></td>
           <td class="acciones"><button class="enlace buscarA" type="button">Buscar</button> <button class="enlace borrarA" type="button">Borrar</button></td></tr>`).join('')}</tbody></table>`;
   }
-  document.querySelectorAll('.seg[data-tipo]').forEach((b) => b.addEventListener('click', () => { tipoLista = b.dataset.tipo; pintarAlertas(); }));
+  // ---- selección múltiple: pausar, activar o borrar varias a la vez ----
+  const seleccionadas = new Set();
+  async function enBloque(accion) {
+    const ids = [...seleccionadas];
+    for (const id of ids) {
+      if (accion === 'borrar') await fetch('/api/alertas/' + id, { method: 'DELETE' });
+      else await fetch('/api/alertas/' + id, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activa: accion === 'activar' }) });
+    }
+    seleccionadas.clear();
+    await refrescarAlertas();
+  }
+  $('#btnSelPausar').addEventListener('click', () => enBloque('pausar'));
+  $('#btnSelActivar').addEventListener('click', () => enBloque('activar'));
+  $('#btnSelBorrar').addEventListener('click', (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.seguro !== '1') { b.dataset.seguro = '1'; b.textContent = `¿Borrar ${seleccionadas.size}? Clic otra vez`; setTimeout(() => { b.dataset.seguro = ''; b.textContent = 'Borrar'; }, 4000); return; }
+    b.dataset.seguro = ''; b.textContent = 'Borrar';
+    enBloque('borrar');
+  });
+  document.querySelectorAll('.seg[data-tipo]').forEach((b) => b.addEventListener('click', () => { tipoLista = b.dataset.tipo; seleccionadas.clear(); pintarAlertas(); }));
   $('#filtroA').addEventListener('input', pintarAlertas);
   $('#tablaAlertas').addEventListener('click', async (e) => {
     const o = e.target.closest('.ordenar');
@@ -282,6 +321,15 @@
     }
   });
   $('#tablaAlertas').addEventListener('change', async (e) => {
+    if (e.target.id === 'selTodas') {
+      document.querySelectorAll('#tablaAlertas tr[data-id]').forEach((tr) => { if (e.target.checked) seleccionadas.add(Number(tr.dataset.id)); else seleccionadas.delete(Number(tr.dataset.id)); });
+      pintarAlertas(); return;
+    }
+    if (e.target.classList.contains('sel')) {
+      const id = Number(e.target.closest('tr').dataset.id);
+      if (e.target.checked) seleccionadas.add(id); else seleccionadas.delete(id);
+      pintarAlertas(); return;
+    }
     if (!e.target.classList.contains('activa')) return;
     const id = e.target.closest('tr').dataset.id;
     await fetch('/api/alertas/' + id, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activa: e.target.checked }) });
