@@ -112,11 +112,17 @@ export function estadisticas(db) {
   return { listas: t.total || 0, con_lista: t.ok || 0, sin_lista: t.sin_lista || 0, desde: t.desde, hasta: t.hasta, acuerdos: a.n, mb: Math.round(tam / 1048576) };
 }
 
-// Convierte un nombre en una consulta FTS: todas las palabras deben aparecer (en cualquier orden).
+// Convierte un nombre en una consulta FTS de FRASE: las palabras deben ir juntas y en orden, para no
+// mezclar a personas distintas ("Alejandra X" + "Juan Alvarado Pérez" no es "Alejandra Alvarado Pérez").
+// Se aceptan todas las rotaciones, para cubrir "APELLIDOS NOMBRE" ("ALVARADO PEREZ ALEJANDRA").
+export function rotaciones(palabras) {
+  return palabras.map((_, i) => [...palabras.slice(i), ...palabras.slice(0, i)]);
+}
 function consultaNombre(nombre, columnas) {
-  const palabras = normalizar(nombre).replace(/\//g, ' ').split(' ').filter((w) => w.length >= 2);
+  const palabras = normalizar(nombre).replace(/\//g, ' ').split(' ').filter((w) => w.length >= 1);
   if (!palabras.length) return null;
-  return `${columnas} : (${palabras.map((w) => `"${w}"`).join(' AND ')})`;
+  const frases = rotaciones(palabras).map((p) => `"${p.join(' ')}"`);
+  return `${columnas} : (${frases.join(' OR ')})`;
 }
 
 const MAX_RESULTADOS = 3000;

@@ -230,7 +230,11 @@ export function buscarEnLista(lista, { expedientes = [], nombres = [], enTexto =
   const hallazgos = [];
   const coincideNombre = (txt) => {
     const t = ' ' + normalizar(txt) + ' ';
-    return noms.filter((n) => n.split(' ').every((w) => t.includes(' ' + w + ' ')));
+    // el nombre completo, con las palabras juntas, en orden normal o con los apellidos primero
+    return noms.filter((n) => {
+      const p = n.split(' ');
+      return p.some((_, i) => t.includes(' ' + [...p.slice(i), ...p.slice(0, i)].join(' ') + ' '));
+    });
   };
   for (const a of lista.acuerdos) {
     const motivos = [];

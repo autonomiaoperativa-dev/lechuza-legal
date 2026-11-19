@@ -60,6 +60,19 @@ búsqueda o **crear la alerta** desde ahí. Las búsquedas en modo incógnito no
 Arriba de los resultados aparece el **Resumen de la búsqueda** (identidad, juzgado, listas revisadas,
 fechas, actor, demandado y número de acuerdos), y cada expediente se puede bajar en **CSV** o **PDF**.
 
+## Antecedentes legales (en la versión instalada)
+
+La pestaña **Antecedentes** busca a una persona física (nombre y apellidos) o moral (razón social) en
+**todas las listas de acuerdos de SLP** del periodo elegido (1, 3, 5 o 10 años) y arma un reporte:
+resumen de la consulta, participación (expedientes, como demandado, como actor), análisis de homonimia,
+resultados por materia y por juzgado, cada expediente con su línea de tiempo y las fuentes consultadas.
+Se descarga en **PDF** (con "Detalle", incluye el texto de cada acuerdo) y **CSV**, y desde el reporte se
+puede crear una **alerta por nombre**. Tiene su propio historial de búsquedas.
+
+El nombre debe aparecer **completo y con las palabras juntas** (en orden normal o con los apellidos
+primero), para no mezclar a personas distintas. CURP y RFC solo se anotan como referencia: las listas no
+los publican. SAT, cédulas, edictos y CURP aparecen como "no consultado en esta versión".
+
 ## Alertas (en la versión instalada)
 
 Una alerta revisa **cada mañana** las listas nuevas y avisa por correo si hay movimiento:

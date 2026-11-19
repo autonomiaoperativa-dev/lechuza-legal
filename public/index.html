@@ -14,6 +14,7 @@
   </div>
   <nav class="tabs" role="tablist">
     <button role="tab" class="tab activo" data-tab="buscar">Buscar</button>
+    <button role="tab" class="tab" data-tab="antecedentes">Antecedentes</button>
     <button role="tab" class="tab" data-tab="historial">Historial</button>
     <button role="tab" class="tab" data-tab="alertas">Alertas <span id="badgeAlertas" class="badge" hidden></span></button>
     <button role="tab" class="tab" data-tab="comparar">Comparar con Buholegal</button>
@@ -98,6 +99,58 @@
         <p class="nota">El programa descarga el PDF oficial de cada juzgado y día, lo convierte en texto, lo separa por expediente y busca lo que escribiste. Lo ya descargado se guarda y no se vuelve a pedir.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ============ ANTECEDENTES ============ -->
+<section id="antecedentes" class="panel">
+  <form id="formAnt" class="tarjeta" autocomplete="off">
+    <div class="fila-tit"><h2>Búsqueda de antecedentes legales</h2>
+      <span class="ayuda">Busca a una persona o empresa en todas las listas de acuerdos del periodo · <a href="#" id="linkHistAnt">Historial de búsquedas</a></span></div>
+    <div class="ant-grid">
+      <div>
+        <h3>Datos de la persona</h3>
+        <div class="segmentos" role="radiogroup" aria-label="Tipo de persona">
+          <label><input type="radio" name="antTipo" value="fisica" checked> Física</label>
+          <label><input type="radio" name="antTipo" value="moral"> Moral (empresa)</label>
+        </div>
+        <label class="campo ant-fisica">Nombre(s) * <input type="text" id="antNombres" placeholder="Ej. Juan"></label>
+        <label class="campo ant-fisica">Apellido paterno * <input type="text" id="antPaterno" placeholder="Ej. Pérez"></label>
+        <label class="campo ant-fisica">Apellido materno <input type="text" id="antMaterno" placeholder="Ej. López"></label>
+        <label class="campo ant-moral" hidden>Razón social * <span class="ayuda">sin "S.A. de C.V." ni similares</span><input type="text" id="antRazon" placeholder="Ej. Constructora del Centro"></label>
+      </div>
+      <div>
+        <h3>Tipo de búsqueda</h3>
+        <div class="segmentos" role="radiogroup" aria-label="Rango de búsqueda">
+          <label><input type="radio" name="antRango" value="estatal" checked> Estatal</label>
+          <label class="deshabilitado" title="Próximamente"><input type="radio" name="antRango" value="nacional" disabled> Nacional <span class="ayuda">(próximamente)</span></label>
+        </div>
+        <label class="campo">Estado * <select id="antEstado"><option>San Luis Potosí</option></select></label>
+        <label class="campo">CURP <span class="ayuda">opcional, solo como referencia en el reporte</span><input type="text" id="antCurp" maxlength="18"></label>
+        <label class="campo">RFC <span class="ayuda">opcional, solo como referencia en el reporte</span><input type="text" id="antRfc" maxlength="13"></label>
+      </div>
+    </div>
+    <h3>Opciones de búsqueda</h3>
+    <div class="ant-grid">
+      <div>
+        <label class="campo">Periodo de búsqueda
+          <select id="antPeriodo"><option value="10" selected>Últimos 10 años</option><option value="5">Últimos 5 años</option><option value="3">Últimos 3 años</option><option value="1">Último año</option></select></label>
+        <label class="check"><input type="checkbox" id="antDetalle"> Detalle: incluir el texto completo de cada acuerdo en el PDF</label>
+        <label class="check"><input type="checkbox" id="antEnTexto"> Buscar el nombre también dentro del texto de los acuerdos (no solo como parte)</label>
+      </div>
+      <div class="ant-acciones">
+        <p class="nota">Las listas publican nombres, no CURP ni RFC: un nombre igual no prueba que sea la misma persona.</p>
+        <button type="submit" id="btnAnt" class="primario">Realizar búsqueda</button>
+        <p id="antError" class="error" role="alert"></p>
+      </div>
+    </div>
+  </form>
+  <div id="reporteAnt" class="tarjeta reporte" hidden></div>
+  <div id="histAnt" class="tarjeta">
+    <div class="fila-tit"><h2>Historial de búsquedas de antecedentes</h2><span class="ayuda" id="nAntH"></span></div>
+    <div class="botones"><input type="search" id="filtroAntH" placeholder="Buscar en el historial (nombre o razón social)" aria-label="Buscar en el historial">
+      <button type="button" class="secundario" id="limpiarAntH">Limpiar búsqueda</button></div>
+    <div id="tablaAntH" class="tabla-scroll"></div>
   </div>
 </section>
 
@@ -216,5 +269,6 @@
 <script src="resumen.js"></script>
 <script src="app.js"></script>
 <script src="plataforma.js"></script>
+<script src="antecedentes.js"></script>
 </body>
 </html>

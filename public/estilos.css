@@ -141,3 +141,23 @@ th .ordenar { border: 0; background: none; color: var(--suave); font: inherit; f
 .barra-sel { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--fondo); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; font-size: 13px; font-weight: 600; }
 tr.pausada td { opacity: .55; }
 tr.pausada td:last-child, tr.pausada td:nth-last-child(2) { opacity: 1; }
+
+/* ---------- antecedentes ---------- */
+.ant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 28px; }
+@media (max-width: 760px) { .ant-grid { grid-template-columns: 1fr; } }
+.ant-acciones { display: flex; flex-direction: column; justify-content: flex-end; }
+.segmentos .deshabilitado { opacity: .5; cursor: not-allowed; }
+.campo select { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 8px; background: var(--tarjeta); color: var(--texto); font: inherit; }
+.reporte h3 { margin-top: 18px; border-bottom: 1px solid var(--borde); padding-bottom: 4px; }
+.reporte h4 { margin: 12px 0 6px; font-size: 14px; }
+.tabla-mini { margin: 6px 0; }
+.tabla-mini th { position: static; }
+.kpis-ant { margin: 12px 0 4px; }
+.dos-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 760px) { .dos-col { grid-template-columns: 1fr; } }
+.rol { font-weight: 700; }
+.rol-demandado { background: color-mix(in srgb, var(--mal) 15%, transparent); color: var(--mal); border-color: transparent; }
+.rol-actor { background: color-mix(in srgb, var(--acento2) 15%, transparent); color: var(--acento2); border-color: transparent; }
+button.primario-chico { border: 0; border-radius: 8px; padding: 6px 12px; background: var(--acento); color: #fff; font: 600 13px inherit; font-family: inherit; cursor: pointer; }
+#histAnt .botones { margin-bottom: 8px; }
+#histAnt input[type=search] { width: 320px; max-width: 100%; }

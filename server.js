@@ -145,6 +145,34 @@ async function buscarSeguro(req, res) {
 }
 
 // ---------- alertas (solo donde hay archivo local) ----------
+// ---------- antecedentes legales: un nombre en todos los juzgados durante N años ----------
+const GENERICOS_MORAL = new Set(['sa', 's', 'a', 'de', 'cv', 'c', 'v', 'rl', 'r', 'l', 'sapi', 'sab', 'sc', 'ac', 'spr', 'sas', 'y', 'la', 'el', 'del', 'los', 'las']);
+async function antecedentes(req, res) {
+  const db = await obtenerIndice();
+  if (!db) return json(res, 200, { disponible: false, mensaje: 'La búsqueda de antecedentes usa el archivo local de 10 años y funciona en la versión instalada en la computadora.' });
+  const q = await leerCuerpo(req);
+  const moral = q.tipo_persona === 'moral';
+  const partes = moral ? [q.razon_social] : [q.nombres, q.ap_paterno, q.ap_materno];
+  const nombre = partes.map((s) => String(s || '').trim()).filter(Boolean).join(' ');
+  const palabras = slp.normalizar(nombre).split(' ').filter((w) => w.length >= 2 && !(moral && GENERICOS_MORAL.has(w)));
+  if (moral ? palabras.length < 1 : (!String(q.nombres || '').trim() || !String(q.ap_paterno || '').trim())) {
+    return json(res, 400, { error: moral ? 'Escribe la razón social.' : 'Escribe el nombre y al menos el apellido paterno.' });
+  }
+  const anios = [1, 3, 5, 10].includes(Number(q.periodo)) ? Number(q.periodo) : 10;
+  const hoy = slp.hoyMexico();
+  const desde = `${Number(hoy.slice(0, 4)) - anios}${hoy.slice(4)}`;
+  const juzgados = (await slp.catalogo()).map((j) => j.codigo);
+  const t0 = Date.now();
+  const r = indice.buscar(db, { juzgados, desde, hasta: hoy, expedientes: [], nombres: [palabras.join(' ')], enTexto: !!q.en_texto });
+  const st = indice.estadisticas(db);
+  const cobertura = db.prepare('SELECT COUNT(*) n, MIN(fecha) desde, MAX(fecha) hasta FROM listas WHERE fecha BETWEEN ? AND ?').get(desde, hoy);
+  return json(res, 200, {
+    disponible: true, criterio: nombre, palabras, desde, hasta: hoy, anios, ms: Date.now() - t0,
+    hallazgos: r.hallazgos, recortado: r.recortado,
+    fuentes: { listas_revisadas: cobertura.n, archivo_desde: cobertura.desde, archivo_hasta: cobertura.hasta, juzgados: juzgados.length, total_archivo: st.listas },
+  });
+}
+
 async function rutasAlertas(req, res, u) {
   const db = await obtenerIndice();
   if (!db) return json(res, 200, { disponible: false, mensaje: 'Las alertas funcionan en la versión instalada en la computadora, donde está el archivo local de listas.' });
@@ -175,15 +203,21 @@ const server = http.createServer(async (req, res) => {
     const u = new URL(req.url, `http://${req.headers.host}`);
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.6', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.7', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
     if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
     if (u.pathname.startsWith('/api/alertas') || u.pathname === '/api/novedades') return await rutasAlertas(req, res, u);
     if (u.pathname === '/api/pdf' && req.method === 'POST') {
       const q = await leerCuerpo(req, 20e6);
       const grupos = Array.isArray(q.grupos) ? q.grupos.slice(0, 200) : [];
-      if (!grupos.length) return json(res, 400, { error: 'No hay expedientes para el PDF.' });
-      return generarResumenPdf(res, { grupos, incluirTexto: !!q.incluirTexto, criterios: String(q.criterios || '').slice(0, 300) });
+      if (!grupos.length && !Array.isArray(q.bloques)) return json(res, 400, { error: 'No hay expedientes para el PDF.' });
+      return generarResumenPdf(res, {
+        grupos, incluirTexto: !!q.incluirTexto, criterios: String(q.criterios || '').slice(0, 300),
+        titulo: q.titulo ? String(q.titulo).slice(0, 120) : undefined,
+        bloques: Array.isArray(q.bloques) ? q.bloques.slice(0, 20) : [],
+        nombreArchivo: q.nombreArchivo ? String(q.nombreArchivo).replace(/[^\w.-]+/g, '_').slice(0, 80) : undefined,
+      });
     }
+    if (u.pathname === '/api/antecedentes' && req.method === 'POST') return await antecedentes(req, res);
     // archivos de la vista
     const rel = u.pathname === '/' ? 'index.html' : u.pathname.slice(1);
     const file = path.join(DIR, 'public', path.normalize(rel));
