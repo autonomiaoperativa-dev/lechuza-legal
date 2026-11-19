@@ -134,6 +134,7 @@ $('#form').addEventListener('submit', async (e) => {
     pintar(total);
     const ix = ULTIMA.indice;
     $('#progresoTxt').textContent = `Listo: ${(ULTIMA.listas.length + (ix ? ix.listas : 0)).toLocaleString('es-MX')} listas revisadas` + (ix ? ` (${ix.listas.toLocaleString('es-MX')} en el archivo local, en ${(ix.ms / 1000).toFixed(1)} s)` : '') + (ix && ix.recortado ? '. Hay demasiadas coincidencias: se muestran las primeras 3,000.' : '.');
+    if (window.alTerminarBusqueda) window.alTerminarBusqueda();
   } catch (err) {
     if (err.name === 'AbortError') $('#progresoTxt').textContent = 'Búsqueda cancelada.';
     else { $('#error').textContent = err.message; $('#progresoCaja').hidden = true; if (!ULTIMA.listas.length) { $('#kpis').hidden = true; $('#resCaja').hidden = true; $('#vacio').hidden = false; } }
@@ -270,11 +271,14 @@ function pintarFichas(H) {
         <div>${esc(a.resumen)}</div>
         ${a.plazos.length || a.montos.length ? `<div class="tl-extra">${a.plazos.length ? 'Plazos: ' + esc(a.plazos.join(', ')) : ''}${a.plazos.length && a.montos.length ? ' · ' : ''}${a.montos.length ? 'Montos: ' + esc(a.montos.join(', ')) : ''}</div>` : ''}
         <a href="${esc(a.url)}" target="_blank" rel="noopener" class="ayuda">lista oficial</a></li>`;
+    const conAlerta = window.tieneAlerta && window.tieneAlerta('expediente', g.expediente, g.codigo);
     return `<div class="ficha">
       <div class="fila-tit"><div><span class="exp">${esc(g.expediente)}</span> <span>${esc(g.juzgado)}</span></div>
-        <button class="secundario btnPdf" type="button" data-i="${i}">Descargar PDF</button></div>
+        <span class="botones"><button class="secundario btnCsv1" type="button" data-i="${i}">CSV</button>
+        <button class="secundario btnPdf" type="button" data-i="${i}">PDF</button>
+        ${conAlerta ? '<span class="etq alerta-si">Con alerta</span>' : `<button class="secundario btnAlerta1" type="button" data-i="${i}">Crear alerta</button>`}</span></div>
       <div class="ficha-datos">${g.tipo_juicio ? `<span class="etq">${esc(g.tipo_juicio)}</span> ` : ''}<span class="etq">${g.total} acuerdo${g.total > 1 ? 's' : ''} · ${esc(fmtF(g.primera))} a ${esc(fmtF(g.ultima))}</span></div>
-      <div class="partes">${esc(g.partes)}</div>
+      ${g.actor || g.demandado ? `<div class="partes-tabla"><div><span class="ayuda">Actor</span> ${esc(g.actor || '—')}</div><div><span class="ayuda">Demandado</span> ${esc(g.demandado || '—')}</div></div>` : `<div class="partes">${esc(g.partes)}</div>`}
       <ol class="linea-tiempo">${filas.slice(0, 5).map(fila).join('')}</ol>
       ${filas.length > 5 ? `<details><summary>Ver los otros ${filas.length - 5} acuerdos</summary><ol class="linea-tiempo">${filas.slice(5).map(fila).join('')}</ol></details>` : ''}
     </div>`;
@@ -289,8 +293,9 @@ async function descargarPdf(grupos, boton) {
     const criterios = [c.expedientes && 'expedientes: ' + lineas(c.expedientes),
       c.nombres && 'nombres: ' + lineas(c.nombres),
       c.desde && `del ${fmtF(c.desde)} al ${fmtF(c.hasta)}`].filter(Boolean).join(' · ');
+    const resumen = window.textoResumenBusqueda ? window.textoResumenBusqueda() : '';
     const r = await fetch('/api/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ grupos, incluirTexto: $('#pdfTexto').checked, criterios }) });
+      body: JSON.stringify({ grupos, incluirTexto: $('#pdfTexto').checked, criterios: [criterios, resumen].filter(Boolean).join(' · ') }) });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No se pudo generar el PDF');
     const blob = await r.blob();
     const nombre = (r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || 'resumen.pdf';
@@ -302,7 +307,10 @@ async function descargarPdf(grupos, boton) {
 }
 function alertaSuave(m) { $('#error').textContent = m; }
 $('#fichas').addEventListener('click', (e) => {
-  const b = e.target.closest('.btnPdf'); if (!b) return;
-  descargarPdf([GRUPOS[+b.dataset.i]], b);
+  const b = e.target.closest('.btnPdf, .btnCsv1, .btnAlerta1'); if (!b) return;
+  const g = GRUPOS[+b.dataset.i];
+  if (b.classList.contains('btnPdf')) descargarPdf([g], b);
+  else if (b.classList.contains('btnCsv1')) window.descargarCsvExpedientes([g]);
+  else window.abrirCrearAlerta({ tipo: 'expediente', valor: g.expediente, juzgados: [g.codigo], etiqueta: g.actor || '' });
 });
 $('#btnPdfTodos').addEventListener('click', (e) => descargarPdf(GRUPOS, e.currentTarget));

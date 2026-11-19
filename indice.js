@@ -133,7 +133,7 @@ export function buscar(db, { juzgados, desde, hasta, expedientes = [], nombres =
     porId.set(r.id, {
       tipo_juicio: r.tipo_juicio, clase: r.clase, expediente: r.expediente, partes: r.partes,
       texto: r.texto && r.texto.length > 6000 ? r.texto.slice(0, 6000) + ' […]' : r.texto,
-      motivos: [motivo], codigo: r.codigo, fecha: r.fecha, url: pdfUrl(r.codigo, r.fecha),
+      id: r.id, motivos: [motivo], codigo: r.codigo, fecha: r.fecha, url: pdfUrl(r.codigo, r.fecha),
     });
   };
   const cols = 'a.id, a.codigo, a.fecha, a.expediente, a.clase, a.tipo_juicio, a.partes, a.texto';

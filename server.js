@@ -8,11 +8,14 @@ import { fileURLToPath } from 'node:url';
 import * as slp from './slp.js';
 import * as indice from './indice.js';
 import { generarResumenPdf } from './pdf.js';
+import * as alertas from './alertas.js';
 
 // Archivo local (data/lechuza.db). Si no existe, todo funciona como antes (descargando).
 let DB = null;
 async function obtenerIndice() {
-  if (!DB) { try { DB = await indice.abrir(); } catch (e) { console.error('Archivo local no disponible:', e.message); } }
+  if (!DB) {
+    try { DB = await indice.abrir(); if (DB) alertas.prepararTablas(DB); } catch (e) { console.error('Archivo local no disponible:', e.message); }
+  }
   return DB;
 }
 let statsCache = { t: 0, v: null };
@@ -141,13 +144,40 @@ async function buscarSeguro(req, res) {
   res.end();
 }
 
+// ---------- alertas (solo donde hay archivo local) ----------
+async function rutasAlertas(req, res, u) {
+  const db = await obtenerIndice();
+  if (!db) return json(res, 200, { disponible: false, mensaje: 'Las alertas funcionan en la versión instalada en la computadora, donde está el archivo local de listas.' });
+  try {
+    if (u.pathname === '/api/alertas' && req.method === 'GET') {
+      return json(res, 200, { disponible: true, correo: alertas.correoConfigurado(), alertas: alertas.listar(db) });
+    }
+    if (u.pathname === '/api/alertas' && req.method === 'POST') return json(res, 200, alertas.crear(db, await leerCuerpo(req)));
+    if (u.pathname === '/api/alertas/revisar' && req.method === 'POST') {
+      const r = await alertas.revisar(db);
+      let correo = null;
+      try { correo = await alertas.enviarPendientes(db); } catch (e) { correo = { correos: 0, motivo: e.message }; }
+      return json(res, 200, { revisadas: r.length, nuevas: r.reduce((s, a) => s + a.nuevas, 0), correo });
+    }
+    if (u.pathname === '/api/novedades' && req.method === 'GET') return json(res, 200, { novedades: alertas.novedades(db) });
+    if (u.pathname === '/api/novedades' && req.method === 'POST') { alertas.marcarVistas(db, (await leerCuerpo(req)).alerta_id); return json(res, 200, { ok: true }); }
+    const m = u.pathname.match(/^\/api\/alertas\/(\d+)$/);
+    if (m && req.method === 'POST') return json(res, 200, alertas.actualizar(db, Number(m[1]), await leerCuerpo(req)));
+    if (m && req.method === 'DELETE') { alertas.borrar(db, Number(m[1])); return json(res, 200, { ok: true }); }
+    return json(res, 404, { error: 'no encontrado' });
+  } catch (e) {
+    return json(res, 400, { error: e.message });
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const u = new URL(req.url, `http://${req.headers.host}`);
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.5', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.6', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
     if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
+    if (u.pathname.startsWith('/api/alertas') || u.pathname === '/api/novedades') return await rutasAlertas(req, res, u);
     if (u.pathname === '/api/pdf' && req.method === 'POST') {
       const q = await leerCuerpo(req, 20e6);
       const grupos = Array.isArray(q.grupos) ? q.grupos.slice(0, 200) : [];

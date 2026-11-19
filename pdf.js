@@ -40,7 +40,8 @@ export function generarResumenPdf(res, { grupos = [], incluirTexto = false, crit
     doc.moveDown(0.3).fontSize(10).fillColor('#1b2733');
     const fila = (et, val) => { if (!val) return; doc.font('Helvetica-Bold').text(et + ': ', { continued: true }).font('Helvetica').text(limpio(val), { width: ancho }); };
     fila('Tipo de juicio', g.tipo_juicio);
-    fila('Partes', g.partes);
+    if (g.actor || g.demandado) { fila('Actor', g.actor); fila('Demandado', g.demandado); }
+    else fila('Partes', g.partes);
     fila('Acuerdos encontrados', `${g.total} (del ${fmtF(g.primera)} al ${fmtF(g.ultima)})`);
     doc.moveDown(0.6);
 

@@ -51,6 +51,42 @@ Activa el interruptor **Búsqueda incógnito** antes de buscar:
 - En cualquier modo, los nombres y expedientes que escribes **nunca se envían** al Poder Judicial: el
   programa descarga la lista completa del juzgado y busca en tu computadora.
 
+### Historial de búsquedas
+
+La pestaña **Historial** guarda cada búsqueda (en este navegador): qué se buscó, juzgados, periodo,
+listas revisadas, resultados y si ese expediente o nombre ya tiene alerta. Se puede **repetir** una
+búsqueda o **crear la alerta** desde ahí. Las búsquedas en modo incógnito no se guardan.
+
+Arriba de los resultados aparece el **Resumen de la búsqueda** (identidad, juzgado, listas revisadas,
+fechas, actor, demandado y número de acuerdos), y cada expediente se puede bajar en **CSV** o **PDF**.
+
+## Alertas (en la versión instalada)
+
+Una alerta revisa **cada mañana** las listas nuevas y avisa por correo si hay movimiento:
+
+- **Por expediente:** un número (NNN/AAAA) en uno, varios o todos los juzgados.
+- **Por nombre:** una persona o empresa como parte del juicio (o en todo el texto del acuerdo).
+
+Se crean en la pestaña **Alertas** (o con "Crear alerta" en una ficha o en el historial). Cada alerta
+tiene un nombre para reconocerla y el correo de quien recibe los avisos. Lo encontrado queda en
+**Novedades**. Empiezan a revisar desde el día en que se crean; lo anterior se ve con una búsqueda normal.
+
+La revisión corre con `ACTUALIZAR ARCHIVO.bat` (programado a las 9:00) o con "Revisar ahora".
+Necesita el archivo local, por eso no funciona en la versión en línea.
+
+**Configurar el correo de envío:** crea el archivo `app/.env` (no se sube a GitHub) con:
+
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=cuenta-de-envio@gmail.com
+SMTP_PASS=contraseña-de-aplicación
+SMTP_FROM=Lechuza Legal <cuenta-de-envio@gmail.com>
+```
+
+Con Gmail se usa una "contraseña de aplicación" (Cuenta de Google → Seguridad → Verificación en dos
+pasos → Contraseñas de aplicaciones), no la contraseña normal.
+
 ## Archivo local: búsquedas de años en segundos (en tu computadora)
 
 Para buscar en muchos años sin esperar descargas, Lechuza Legal puede guardar todas las listas en un

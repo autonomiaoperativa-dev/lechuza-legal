@@ -14,6 +14,8 @@
   </div>
   <nav class="tabs" role="tablist">
     <button role="tab" class="tab activo" data-tab="buscar">Buscar</button>
+    <button role="tab" class="tab" data-tab="historial">Historial</button>
+    <button role="tab" class="tab" data-tab="alertas">Alertas <span id="badgeAlertas" class="badge" hidden></span></button>
     <button role="tab" class="tab" data-tab="comparar">Comparar con Buholegal</button>
     <button role="tab" class="tab" data-tab="fuentes">Fuentes</button>
     <button role="tab" class="tab" data-tab="ayuda">Cómo funciona</button>
@@ -76,10 +78,12 @@
         <div class="kpi"><span id="kErr">0</span>con error</div>
         <div class="kpi destacado"><span id="kHall">0</span>coincidencias</div>
       </div>
+      <div class="tarjeta resumen-busq" id="resumenBusq" hidden></div>
       <div class="tarjeta" id="fichasCaja" hidden>
         <div class="fila-tit"><h2>Resumen por expediente <span id="contFichas" class="ayuda"></span></h2>
           <span><label class="check-mini"><input type="checkbox" id="pdfTexto"> incluir texto completo</label>
-          <button id="btnPdfTodos" class="secundario" type="button">Descargar PDF de todos</button></span></div>
+          <button id="btnCsvTodos" class="secundario" type="button">CSV de todos</button>
+          <button id="btnPdfTodos" class="secundario" type="button">PDF de todos</button></span></div>
         <p class="nota">Resumen automático: cada línea toma frases del texto oficial del acuerdo. Información de apoyo, no asesoría legal.</p>
         <div id="fichas"></div>
       </div>
@@ -92,6 +96,63 @@
       <div class="vacio tarjeta" id="vacio">
         <p><strong>Escribe un expediente o un nombre, elige fechas y juzgados, y presiona Buscar.</strong></p>
         <p class="nota">El programa descarga el PDF oficial de cada juzgado y día, lo convierte en texto, lo separa por expediente y busca lo que escribiste. Lo ya descargado se guarda y no se vuelve a pedir.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HISTORIAL ============ -->
+<section id="historial" class="panel">
+  <div class="tarjeta">
+    <div class="fila-tit"><h2>Historial de búsquedas</h2>
+      <span class="botones"><input type="search" id="filtroH" placeholder="Filtrar por expediente, nombre o juzgado…" aria-label="Filtrar historial">
+      <button id="btnBorrarHist" class="secundario" type="button">Borrar historial</button></span></div>
+    <p class="nota">Se guarda solo en este navegador. Las búsquedas en modo incógnito no se guardan.</p>
+    <div id="tablaHist" class="tabla-scroll"></div>
+  </div>
+</section>
+
+<!-- ============ ALERTAS ============ -->
+<section id="alertas" class="panel">
+  <p id="alertasNoDisp" class="tarjeta nota" hidden></p>
+  <div class="rejilla" id="alertasCont">
+    <form id="formAlerta" class="tarjeta" autocomplete="off">
+      <h2>Nueva alerta</h2>
+      <p class="nota">Cada mañana (9:00) se revisan las listas nuevas. Si aparece un acuerdo, queda en <em>Novedades</em> y se avisa por correo.</p>
+      <div class="segmentos" role="radiogroup" aria-label="Tipo de alerta">
+        <label><input type="radio" name="tipoAlerta" value="expediente" checked> Por expediente</label>
+        <label><input type="radio" name="tipoAlerta" value="nombre"> Por nombre</label>
+      </div>
+      <label class="campo"><span id="lblValor">Expediente</span> <span id="ayudaValor" class="ayuda">ej. 954/2014</span>
+        <input type="text" id="aValor" required></label>
+      <label class="campo">Nombre para reconocerla <span class="ayuda">opcional, ej. "Cliente Pérez"</span>
+        <input type="text" id="aEtiqueta" maxlength="80"></label>
+      <div class="campo">Juzgados
+        <label class="check"><input type="radio" name="aJuz" value="todos" checked> Todos los juzgados</label>
+        <label class="check"><input type="radio" name="aJuz" value="marcados"> Los marcados en la pestaña Buscar <span id="aJuzN" class="ayuda"></span></label>
+      </div>
+      <label class="check" id="aEnTextoFila" hidden><input type="checkbox" id="aEnTexto"> Buscar el nombre también dentro del texto (no solo en las partes)</label>
+      <label class="campo">Correo para avisos <span class="ayuda">puede ser de otra persona</span>
+        <input type="email" id="aCorreo" placeholder="nombre@despacho.com"></label>
+      <button type="submit" class="primario">Crear alerta</button>
+      <p id="aMsg" class="nota" role="status"></p>
+    </form>
+
+    <div>
+      <div class="tarjeta">
+        <div class="fila-tit"><h2>Novedades</h2>
+          <span class="botones"><button id="btnRevisar" class="secundario" type="button">Revisar ahora</button>
+          <button id="btnVistas" class="secundario" type="button">Marcar como vistas</button></span></div>
+        <p id="estadoCorreo" class="nota"></p>
+        <div id="listaNovedades"></div>
+      </div>
+      <div class="tarjeta">
+        <div class="fila-tit"><h2>Mis alertas</h2>
+          <span class="botones"><span class="segmentos chico" role="tablist">
+            <button type="button" class="seg activo" data-tipo="expediente">Por expediente <span id="nExp"></span></button>
+            <button type="button" class="seg" data-tipo="nombre">Por nombre <span id="nNom"></span></button></span>
+          <input type="search" id="filtroA" placeholder="Buscar alerta…" aria-label="Buscar alerta"></span></div>
+        <div id="tablaAlertas" class="tabla-scroll"></div>
       </div>
     </div>
   </div>
@@ -150,5 +211,6 @@
 
 <script src="resumen.js"></script>
 <script src="app.js"></script>
+<script src="plataforma.js"></script>
 </body>
 </html>

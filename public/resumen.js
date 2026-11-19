@@ -77,6 +77,14 @@
     return r || t.slice(0, 300);
   }
 
+  // "BANCO X VS JUAN PÉREZ" -> actor / demandado. Si no hay "VS", no se separa.
+  function separarPartes(partes) {
+    const p = String(partes || '').replace(/\s+/g, ' ').replace(/[.\-–\s]+$/, '').trim();
+    const m = p.split(/\s+(?:VS\.?|V\.S\.|V\/S|vs\.?|contra)\s+/);
+    if (m.length >= 2 && m[0].length > 1 && m[1].length > 1) return { actor: m[0].trim(), demandado: m.slice(1).join(' / ').trim() };
+    return { actor: null, demandado: null };
+  }
+
   // Agrupa los hallazgos por juzgado + expediente y arma la ficha de cada uno.
   function agrupar(hallazgos, nombreJ) {
     const grupos = new Map();
@@ -102,11 +110,12 @@
       // las partes más completas (el texto más largo) suelen ser las del encabezado
       const partes = g.acuerdos.map((a) => a.partes || '').sort((a, b) => b.length - a.length)[0] || '';
       delete g.vistos;
-      return { ...g, tipo_juicio: tipos.join(' / ') || null, partes, primera: g.acuerdos[0].fecha, ultima: ult.fecha, total: g.acuerdos.length };
+      const { actor, demandado } = separarPartes(partes);
+      return { ...g, tipo_juicio: tipos.join(' / ') || null, partes, actor, demandado, primera: g.acuerdos[0].fecha, ultima: ult.fecha, total: g.acuerdos.length };
     });
     // primero los expedientes con movimiento más reciente
     return lista.sort((a, b) => b.ultima.localeCompare(a.ultima));
   }
 
-  window.Resumen = { agrupar, etiquetas, plazos, montos, resumirAcuerdo, limpiarTipo };
+  window.Resumen = { agrupar, etiquetas, plazos, montos, resumirAcuerdo, limpiarTipo, separarPartes };
 })();

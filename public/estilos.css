@@ -111,3 +111,30 @@ body.incognito .primario { background: #5b4b8a; }
 .tl-extra { color: var(--aviso); font-size: 12px; font-weight: 600; margin-top: 2px; }
 .check-mini { font-size: 12px; font-weight: 400; color: var(--suave); margin-right: 6px; }
 .check-mini input { width: auto; display: inline; margin: 0 4px 0 0; }
+
+/* ---------- historial, resumen de búsqueda y alertas ---------- */
+.botones { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.botones input[type=search] { width: 220px; margin: 0; }
+.badge { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 99px; background: #b3261e; color: #fff; font-size: 11px; line-height: 18px; text-align: center; font-weight: 700; }
+.alerta-si { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); border-color: transparent; font-weight: 600; }
+.resumen-busq { border-left: 4px solid var(--acento2); }
+.resumen-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 6px 0 0; font-size: 14px; }
+.resumen-dl dt { color: var(--suave); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; padding-top: 2px; }
+.resumen-dl dd { margin: 0; }
+.identidad { display: inline-flex; gap: 4px; align-items: center; margin: 0 10px 4px 0; }
+.partes-tabla { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 6px 0; font-size: 14px; }
+.partes-tabla .ayuda { display: block; text-transform: uppercase; font-size: 11px; letter-spacing: .03em; }
+@media (max-width: 600px) { .partes-tabla { grid-template-columns: 1fr; } }
+.acciones { white-space: nowrap; }
+.acciones .enlace { font-size: 13px; padding: 0 4px; }
+.segmentos { display: flex; gap: 0; border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+.segmentos label, .segmentos .seg { flex: 1; display: flex; gap: 6px; align-items: center; justify-content: center; padding: 7px 10px; font-size: 13px; cursor: pointer; background: var(--tarjeta); border: 0; color: var(--texto); font-family: inherit; }
+.segmentos label:has(input:checked), .segmentos .seg.activo { background: var(--acento); color: #fff; }
+.segmentos label input { width: auto; margin: 0; display: inline; }
+.segmentos.chico { margin: 0; }
+.segmentos.chico .seg { padding: 4px 10px; }
+.novedad { border-top: 1px solid var(--borde); padding: 8px 0; font-size: 13px; }
+.novedad:first-child { border-top: 0; }
+.novedad.nueva { border-left: 3px solid var(--acento2); padding-left: 8px; }
+.novedad .exp { font-weight: 700; }
+th .ordenar { border: 0; background: none; color: var(--suave); font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
