@@ -48,6 +48,7 @@
     const cuerpo = {
       tipo_persona: tipoPersona(), nombres: $('#antNombres').value, ap_paterno: $('#antPaterno').value, ap_materno: $('#antMaterno').value,
       razon_social: $('#antRazon').value, periodo: Number($('#antPeriodo').value), en_texto: $('#antEnTexto').checked,
+      rfc: $('#antRfc').value.trim(),
     };
     await buscar(cuerpo, { curp: $('#antCurp').value.trim(), rfc: $('#antRfc').value.trim(), detalle: $('#antDetalle').checked, guardar: true });
   });
@@ -75,6 +76,40 @@
     finally { btn.disabled = false; btn.textContent = 'Realizar búsqueda'; }
   }
 
+  // ---------- SAT (69-B y 69) ----------
+  const SITUACION_69B = {
+    'definitivo': 'no desvirtuó la presunción: el SAT lo publica en definitiva',
+    'presunto': 'el SAT presume operaciones inexistentes; aún puede desvirtuarlo',
+    'desvirtuado': 'desvirtuó la presunción ante el SAT',
+    'sentencia favorable': 'obtuvo sentencia favorable',
+  };
+  function textosSat(R) {
+    const S = R.sat || {};
+    const fecha69b = ((S.listados || []).find((l) => l.id === '69B') || {}).actualizado_al;
+    const descargado = (S.listados || []).map((l) => l.descargado).filter(Boolean).sort().pop();
+    return {
+      S, fecha69b, descargado,
+      efosTxt: !S.disponible ? 'Los listados del SAT aún no se han descargado en esta computadora.'
+        : S.efos.length ? `Se encontraron ${S.efos.length} coincidencia(s) en el listado de contribuyentes con operaciones presuntamente inexistentes (artículo 69-B CFF).`
+        : `No se encontraron coincidencias en el listado de contribuyentes con operaciones presuntamente inexistentes (artículo 69-B CFF${fecha69b ? ', actualizado al ' + fecha69b : ''}).`,
+      cancTxt: !S.disponible ? '' : (S.cancelados.length + S.condonados.length)
+        ? `Se encontraron ${S.cancelados.length} registro(s) de créditos cancelados y ${S.condonados.length} de créditos condonados (artículo 69 CFF).`
+        : 'No se encontraron coincidencias en los listados de contribuyentes con créditos cancelados y condonados (artículo 69 CFF).',
+      nota: R.extra.rfc ? 'Se buscó por nombre completo y por RFC.' : 'Se buscó por nombre completo; sin RFC, una coincidencia puede ser un homónimo.',
+    };
+  }
+  function htmlSat(R, tabla) {
+    const t = textosSat(R), S = t.S;
+    const efosFilas = (S.efos || []).map((r) => [esc(r.rfc), esc(r.nombre), `<strong>${esc(r.situacion || '')}</strong><br><span class="ayuda">${esc(SITUACION_69B[norm(r.situacion)] || '')}</span>`, esc(r.fecha || ''), esc(r.por)]);
+    const otrosFilas = [...(S.cancelados || []), ...(S.condonados || [])].map((r) => [esc(r.rfc), esc(r.nombre), esc(r.listado_nombre), esc((r.situacion || '').slice(0, 90)), esc(r.fecha || ''), esc(r.monto ? '$' + r.monto : ''), esc(r.entidad || ''), esc(r.por)]);
+    return `<h3>Situación ante el SAT</h3>
+      <h4>Operaciones presuntamente inexistentes (EFOS, art. 69-B)</h4><p>${esc(t.efosTxt)}</p>
+      ${efosFilas.length ? tabla(['RFC', 'Nombre', 'Situación', 'Oficio / fecha', 'Por'], efosFilas) : ''}
+      ${S.disponible ? `<h4>Contribuyentes con créditos cancelados y condonados (art. 69)</h4><p>${esc(t.cancTxt)}</p>
+      ${otrosFilas.length ? tabla(['RFC', 'Nombre', 'Listado', 'Supuesto', 'Fecha', 'Monto', 'Entidad', 'Por'], otrosFilas) : ''}` : ''}
+      <p class="nota">${esc(t.nota)} Fuente: Datos Abiertos del SAT${t.descargado ? ', descargados el ' + esc(new Date(t.descargado).toLocaleDateString('es-MX')) : ''}.</p>`;
+  }
+
   // ---------- reporte ----------
   function contar(lista, f) { const m = new Map(); for (const x of lista) { const k = f(x); m.set(k, (m.get(k) || 0) + 1); } return [...m].sort((a, b) => b[1] - a[1]); }
   function datosReporte() {
@@ -92,8 +127,6 @@
     const R = REPORTE, d = datosReporte();
     const tabla = (cols, filas) => `<table class="tabla-mini"><thead><tr>${cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${filas.map((f) => `<tr>${f.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     const otras = [
-      ['Operaciones presuntamente inexistentes (SAT, EFOS 69-B)', 'Listado público del SAT'],
-      ['Contribuyentes cancelados y condonados (SAT, art. 69)', 'Listados públicos del SAT'],
       ['Cédulas profesionales', 'Registro Nacional de Profesionistas (SEP)'],
       ['Edictos', 'Periódico Oficial del Estado de San Luis Potosí'],
       ['Verificación del CURP', 'Registro Nacional de Población'],
@@ -125,6 +158,7 @@
       <p>${d.G.length
         ? `El nombre aparece en <strong>${plural(d.G.length, 'expediente')}</strong> de <strong>${plural(d.juzgados.length, 'juzgado')}</strong>${d.primera ? `, entre el ${esc(fmtF(d.primera))} y el ${esc(fmtF(d.ultima))}` : ''}. Las listas publican nombres, no identidades: ${d.juzgados.length > 3 || d.G.length > 5 ? 'con tantos registros en juzgados distintos <strong>es probable que haya homónimos</strong>; ' : ''}confirma con datos del expediente (domicilio, CURP, RFC, contraparte) antes de concluir que se trata de la misma persona.`
         : 'No se encontró el nombre en el periodo revisado. Esto no garantiza que no existan juicios: los asuntos reservados no se publican y los nombres pueden aparecer escritos de otra forma.'}</p>
+      ${htmlSat(R, tabla)}
       <h3>Otras fuentes</h3>
       ${tabla(['Fuente', 'Estado'], otras.map(([a, b]) => [esc(a), `<span class="ayuda">No consultado en esta versión · ${esc(b)}</span>`]))}
       <h3>Resultados de antecedentes legales</h3>
@@ -168,7 +202,19 @@
       { titulo: 'Análisis de homonimia', texto: d.G.length
         ? `El nombre aparece en ${d.G.length} expediente(s) de ${d.juzgados.length} juzgado(s). Las listas publican nombres, no identidades; confirme con datos del expediente (domicilio, CURP, RFC, contraparte) antes de concluir que se trata de la misma persona.`
         : 'No se encontró el nombre en el periodo revisado. Esto no garantiza que no existan juicios: los asuntos reservados no se publican y los nombres pueden aparecer escritos de otra forma.' },
-      { titulo: 'Otras fuentes', texto: 'No consultadas en esta versión: SAT (EFOS 69-B; cancelados y condonados), cédulas profesionales (SEP), edictos (Periódico Oficial de SLP) y verificación de CURP (RENAPO).' },
+      ...(() => {
+        const t = textosSat(R), S = t.S, b = [];
+        b.push({ titulo: 'Situación ante el SAT: operaciones presuntamente inexistentes (EFOS, art. 69-B)', texto: t.efosTxt });
+        if ((S.efos || []).length) b.push({ titulo: '', tabla: { columnas: ['Nombre', 'RFC', 'Situación', 'Oficio / fecha'], filas: S.efos.map((r) => [r.nombre, r.rfc, r.situacion || '', r.fecha || '']) } });
+        if (S.disponible) {
+          b.push({ titulo: 'Situación ante el SAT: créditos cancelados y condonados (art. 69)', texto: t.cancTxt });
+          const otros = [...S.cancelados, ...S.condonados];
+          if (otros.length) b.push({ titulo: '', tabla: { columnas: ['Nombre', 'RFC', 'Listado', 'Fecha', 'Monto'], filas: otros.map((r) => [r.nombre, r.rfc, r.listado_nombre, r.fecha || '', r.monto ? '$' + r.monto : '']) } });
+        }
+        b.push({ titulo: '', texto: t.nota + ' Fuente: Datos Abiertos del SAT (' + R.sat_fuente + ').' });
+        return b;
+      })(),
+      { titulo: 'Otras fuentes', texto: 'No consultadas en esta versión: cédulas profesionales (SEP), edictos (Periódico Oficial de SLP) y verificación de CURP (RENAPO).' },
       ...(d.G.length ? [
         { titulo: 'Resultados por materia', tabla: { columnas: ['Materia', 'Expedientes'], filas: d.materias.map(([k, v]) => [k, String(v)]) } },
         { titulo: 'Resultados por juzgado', tabla: { columnas: ['Juzgado', 'Expedientes'], filas: d.juzgados.map(([k, v]) => [k, String(v)]) } },

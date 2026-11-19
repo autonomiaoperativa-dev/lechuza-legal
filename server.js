@@ -9,12 +9,13 @@ import * as slp from './slp.js';
 import * as indice from './indice.js';
 import { generarResumenPdf } from './pdf.js';
 import * as alertas from './alertas.js';
+import * as sat from './sat.js';
 
 // Archivo local (data/lechuza.db). Si no existe, todo funciona como antes (descargando).
 let DB = null;
 async function obtenerIndice() {
   if (!DB) {
-    try { DB = await indice.abrir(); if (DB) alertas.prepararTablas(DB); } catch (e) { console.error('Archivo local no disponible:', e.message); }
+    try { DB = await indice.abrir(); if (DB) { alertas.prepararTablas(DB); sat.prepararTablas(DB); } } catch (e) { console.error('Archivo local no disponible:', e.message); }
   }
   return DB;
 }
@@ -166,9 +167,12 @@ async function antecedentes(req, res) {
   const r = indice.buscar(db, { juzgados, desde, hasta: hoy, expedientes: [], nombres: [palabras.join(' ')], enTexto: !!q.en_texto });
   const st = indice.estadisticas(db);
   const cobertura = db.prepare('SELECT COUNT(*) n, MIN(fecha) desde, MAX(fecha) hasta FROM listas WHERE fecha BETWEEN ? AND ?').get(desde, hoy);
+  // listados públicos del SAT (69-B y 69): por nombre completo y por RFC si se dio
+  let satRes = null;
+  try { satRes = sat.buscar(db, { nombre: moral ? palabras.join(' ') : nombre, rfc: q.rfc, moral }); } catch (e) { satRes = { disponible: false, error: e.message }; }
   return json(res, 200, {
     disponible: true, criterio: nombre, palabras, desde, hasta: hoy, anios, ms: Date.now() - t0,
-    hallazgos: r.hallazgos, recortado: r.recortado,
+    hallazgos: r.hallazgos, recortado: r.recortado, sat: satRes, sat_fuente: sat.PAGINA_FUENTE,
     fuentes: { listas_revisadas: cobertura.n, archivo_desde: cobertura.desde, archivo_hasta: cobertura.hasta, juzgados: juzgados.length, total_archivo: st.listas },
   });
 }
@@ -203,7 +207,7 @@ const server = http.createServer(async (req, res) => {
     const u = new URL(req.url, `http://${req.headers.host}`);
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.7', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.8', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
     if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
     if (u.pathname.startsWith('/api/alertas') || u.pathname === '/api/novedades') return await rutasAlertas(req, res, u);
     if (u.pathname === '/api/pdf' && req.method === 'POST') {

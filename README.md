@@ -70,8 +70,14 @@ Se descarga en **PDF** (con "Detalle", incluye el texto de cada acuerdo) y **CSV
 puede crear una **alerta por nombre**. Tiene su propio historial de búsquedas.
 
 El nombre debe aparecer **completo y con las palabras juntas** (en orden normal o con los apellidos
-primero), para no mezclar a personas distintas. CURP y RFC solo se anotan como referencia: las listas no
-los publican. SAT, cédulas, edictos y CURP aparecen como "no consultado en esta versión".
+primero), para no mezclar a personas distintas. CURP solo se anota como referencia: las listas no la
+publican. Cédulas, edictos y CURP aparecen como "no consultado en esta versión".
+
+**Situación ante el SAT:** el reporte busca a la persona (por nombre completo y, si se da, por RFC) en
+los listados públicos del SAT (Datos Abiertos): artículo 69-B (EFOS: presuntos, definitivos, desvirtuados,
+sentencias favorables) y artículo 69 (créditos cancelados y condonados). `node sat.js` los descarga al
+archivo local (unos 232 mil registros); `ACTUALIZAR ARCHIVO.bat` los vuelve a bajar solo si el SAT los
+cambió. Fuente: https://www.sat.gob.mx/minisitio/DatosAbiertos/contribuyentes_publicados.html
 
 ## Alertas (en la versión instalada)
 
