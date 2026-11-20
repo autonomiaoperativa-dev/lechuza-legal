@@ -2,9 +2,11 @@
 // En tu computadora: npm start  ->  http://localhost:3077
 // En un servidor (Render u otro) se usa la variable PORT y acepta visitas de internet.
 import http from 'node:http';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DATOS } from './rutas.js';
 import * as slp from './slp.js';
 import * as indice from './indice.js';
 import { generarResumenPdf } from './pdf.js';
@@ -26,7 +28,7 @@ async function estadoArchivo() {
   if (Date.now() - statsCache.t > 60000) statsCache = { t: Date.now(), v: indice.estadisticas(db) };
   let descargador = null;
   try {
-    const e = JSON.parse(await fs.readFile(path.join(DIR, 'data', 'indexar_estado.json'), 'utf8'));
+    const e = JSON.parse(await fs.readFile(path.join(DATOS, 'indexar_estado.json'), 'utf8'));
     if (e.corriendo && Date.now() - Date.parse(e.actualizado) < 30 * 60000) descargador = e;
   } catch {}
   return { ...statsCache.v, descargador };
@@ -128,7 +130,7 @@ async function buscarSeguro(req, res) {
       const [codigo, fecha] = faltantes[siguiente++];
       const lista = await slp.obtenerLista(codigo, fecha, { incognito });
       // lo recién descargado también queda en el archivo local (salvo en incógnito y la lista de hoy sin publicar)
-      if (db && !incognito && (lista.estado === 'ok' || (lista.estado === 'sin_lista' && fecha < hoy))) {
+      if (db && !incognito && (lista.estado === 'ok' || lista.estado === 'danado' || (lista.estado === 'sin_lista' && fecha < hoy))) {
         try { indice.guardar(db, lista); } catch {}
       }
       if (cerrado) break;
@@ -165,6 +167,36 @@ async function antecedentes(req, res) {
   const juzgados = (await slp.catalogo()).map((j) => j.codigo);
   const t0 = Date.now();
   const r = indice.buscar(db, { juzgados, desde, hasta: hoy, expedientes: [], nombres: [palabras.join(' ')], enTexto: !!q.en_texto });
+  // Posibles variantes: muchas listas omiten el apellido materno. Se buscan aparte (nombre + paterno) y
+  // se muestran como "por revisar", sin sumarlas al resultado principal.
+  let variantes = null;
+  if (!moral && String(q.ap_materno || '').trim()) {
+    const sinMaterno = slp.normalizar(`${q.nombres} ${q.ap_paterno}`).split(' ').filter(Boolean).join(' ');
+    const ya = new Set(r.hallazgos.map((h) => h.id));
+    const rv = indice.buscar(db, { juzgados, desde, hasta: hoy, expedientes: [], nombres: [sinMaterno], enTexto: false });
+    // Solo cuenta si tras "nombre paterno" NO sigue otro apellido (coma, VS, "y", fin...). Así se descarta
+    // "Alejandra Alvarado Martínez" cuando se busca a "Alejandra Alvarado Pérez".
+    const SEPARA = new Set([',', '.', ';', 'vs', 'v', 'y', 'e', 'contra', 'en', 'quien', 'quienes', 'por', 'como', 'su', 'sus', 'actor', 'actora', 'demandado', 'demandada', 'apoderado', 'albacea', 'parte', '-', '(']);
+    // antes del nombre se aceptan títulos ("Lic.", "C.") pero no otro nombre de pila
+    const PREVIOS = new Set(['lic', 'licenciado', 'licenciada', 'c', 'ciudadano', 'ciudadana', 'sr', 'sra', 'senor', 'senora', 'ing', 'dr', 'dra', 'arq', 'cp', 'mtro', 'mtra', 'el', 'la', 'del', 'a', 'al']);
+    const tokens = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/([,.;(-])/g, ' $1 ').replace(/[^a-z0-9,.;(\- ]+/g, ' ').split(/\s+/).filter(Boolean);
+    const buscadas = sinMaterno.split(' ');
+    const sinOtroApellido = (texto) => {
+      const t = tokens(texto);
+      for (let i = 0; i + buscadas.length <= t.length; i++) {
+        if (buscadas.every((w, k) => t[i + k] === w)) {
+          const sig = t[i + buscadas.length], prev = t[i - 1];
+          const finOk = sig === undefined || SEPARA.has(sig);
+          const inicioOk = prev === undefined || SEPARA.has(prev) || PREVIOS.has(prev);
+          if (finOk && inicioOk) return true;
+        }
+      }
+      return false;
+    };
+    const solo = rv.hallazgos.filter((h) => !ya.has(h.id) && sinOtroApellido(h.partes));
+    variantes = { criterio: `${String(q.nombres).trim()} ${String(q.ap_paterno).trim()}`, total: solo.length, hallazgos: solo.slice(0, 400), recortado: solo.length > 400 };
+  }
   const st = indice.estadisticas(db);
   const cobertura = db.prepare('SELECT COUNT(*) n, MIN(fecha) desde, MAX(fecha) hasta FROM listas WHERE fecha BETWEEN ? AND ?').get(desde, hoy);
   // listados públicos del SAT (69-B y 69): por nombre completo y por RFC si se dio
@@ -172,7 +204,7 @@ async function antecedentes(req, res) {
   try { satRes = sat.buscar(db, { nombre: moral ? palabras.join(' ') : nombre, rfc: q.rfc, moral }); } catch (e) { satRes = { disponible: false, error: e.message }; }
   return json(res, 200, {
     disponible: true, criterio: nombre, palabras, desde, hasta: hoy, anios, ms: Date.now() - t0,
-    hallazgos: r.hallazgos, recortado: r.recortado, sat: satRes, sat_fuente: sat.PAGINA_FUENTE,
+    hallazgos: r.hallazgos, recortado: r.recortado, variantes, sat: satRes, sat_fuente: sat.PAGINA_FUENTE,
     fuentes: { listas_revisadas: cobertura.n, archivo_desde: cobertura.desde, archivo_hasta: cobertura.hasta, juzgados: juzgados.length, total_archivo: st.listas },
   });
 }
@@ -202,12 +234,55 @@ async function rutasAlertas(req, res, u) {
   }
 }
 
+// ---------- clave de acceso (opcional) ----------
+// Si existe la variable LECHUZA_CLAVE (en app/.env o en Render), la página pide esa clave antes de
+// dejar buscar. Sin la variable, todo queda abierto como antes (uso en la propia computadora).
+const CLAVE = process.env.LECHUZA_CLAVE || '';
+const TOKEN = CLAVE ? crypto.createHash('sha256').update('lechuza-legal:' + CLAVE).digest('hex') : '';
+const intentos = new Map(); // ip -> { n, desde }
+function autorizado(req) {
+  if (!CLAVE) return true;
+  const c = (req.headers.cookie || '').split(';').map((x) => x.trim()).find((x) => x.startsWith('lechuza_sesion='));
+  const v = c ? c.slice('lechuza_sesion='.length) : '';
+  return v.length === TOKEN.length && crypto.timingSafeEqual(Buffer.from(v), Buffer.from(TOKEN));
+}
+const PAGINA_ENTRAR = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lechuza Legal · Entrar</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f6f9;color:#1b2733;font:15px system-ui,sans-serif}
+@media (prefers-color-scheme:dark){body{background:#0f1620;color:#e6edf3}form{background:#18222e!important;border-color:#2a3746!important}input{background:#0f1620;color:#e6edf3;border-color:#2a3746!important}}
+form{background:#fff;border:1px solid #dde3ea;border-radius:12px;padding:24px;width:min(340px,90vw)}h1{font-size:18px;margin:0 0 4px}p{color:#5b6b7b;font-size:13px;margin:0 0 14px}
+input{display:block;width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #dde3ea;border-radius:8px;font:inherit;margin-bottom:10px}
+button{width:100%;padding:10px;border:0;border-radius:8px;background:#16324a;color:#fff;font:600 14px system-ui;cursor:pointer}#e{color:#b3261e;font-size:13px;min-height:1em}</style></head>
+<body><form id="f"><h1>Lechuza Legal</h1><p>Escribe la clave de acceso que te compartieron.</p>
+<input type="password" id="c" autocomplete="current-password" aria-label="Clave de acceso" required autofocus><button>Entrar</button><p id="e" role="alert"></p></form>
+<script>document.getElementById('f').onsubmit=async(ev)=>{ev.preventDefault();const r=await fetch('/api/entrar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clave:document.getElementById('c').value})});
+if(r.ok)location.reload();else document.getElementById('e').textContent=(await r.json().catch(()=>({}))).error||'Clave incorrecta.';};</script></body></html>`;
+async function entrar(req, res) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const a = intentos.get(ip) || { n: 0, desde: Date.now() };
+  if (Date.now() - a.desde > 10 * 60000) { a.n = 0; a.desde = Date.now(); }
+  if (a.n >= 5) return json(res, 429, { error: 'Demasiados intentos. Espera 10 minutos.' });
+  const { clave } = await leerCuerpo(req, 2000);
+  const ok = typeof clave === 'string' && clave.length === CLAVE.length && crypto.timingSafeEqual(Buffer.from(clave), Buffer.from(CLAVE));
+  if (!ok) { a.n++; intentos.set(ip, a); return json(res, 401, { error: 'Clave incorrecta.' }); }
+  intentos.delete(ip);
+  const seguro = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Set-Cookie': `lechuza_sesion=${TOKEN}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${30 * 86400}${seguro}` });
+  res.end('{"ok":true}');
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const u = new URL(req.url, `http://${req.headers.host}`);
+    if (u.pathname === '/api/entrar' && req.method === 'POST' && CLAVE) return await entrar(req, res);
+    if (!autorizado(req)) {
+      if (u.pathname === '/api/estado' && req.method === 'GET' && req.headers['user-agent']?.includes('Render')) return json(res, 200, { ok: true }); // chequeo de salud de Render
+      if (u.pathname.startsWith('/api/')) return json(res, 401, { error: 'Se necesita la clave de acceso.' });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      return res.end(PAGINA_ENTRAR);
+    }
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.8', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.9', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
     if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
     if (u.pathname.startsWith('/api/alertas') || u.pathname === '/api/novedades') return await rutasAlertas(req, res, u);
     if (u.pathname === '/api/pdf' && req.method === 'POST') {

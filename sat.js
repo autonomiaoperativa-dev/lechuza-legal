@@ -164,7 +164,12 @@ export function buscar(db, { nombre, rfc, moral = false }) {
 // ---------- uso desde la línea de comandos ----------
 if (process.argv[1] && process.argv[1].replace(/\\/g, '/').endsWith('/sat.js')) {
   const db = await indice.abrir({ crear: true });
-  const r = await actualizar(db, { forzar: process.argv.includes('--forzar') });
-  console.log(JSON.stringify(r));
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { DATOS } = await import('./rutas.js');
+  const log = (m) => { const l = `[${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}] [sat] ${m}`; console.log(l); try { fs.appendFileSync(path.join(DATOS, 'indexar.log'), l + '\n'); } catch {} };
+  const r = await actualizar(db, { forzar: process.argv.includes('--forzar'), log });
+  const sinCambio = r.filter((x) => x.cambio === false).length;
+  if (sinCambio === r.length) log('Listados del SAT sin cambios.');
   db.close();
 }

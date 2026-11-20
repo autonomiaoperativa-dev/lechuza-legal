@@ -6,9 +6,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as indice from './indice.js';
 import * as alertas from './alertas.js';
+import { DATOS } from './rutas.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const LOG = path.join(DIR, 'data', 'indexar.log');
+const LOG = path.join(DATOS, 'indexar.log');
 const log = (m) => {
   const linea = `[${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}] [alertas] ${m}`;
   console.log(linea);

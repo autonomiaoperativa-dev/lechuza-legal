@@ -63,7 +63,9 @@
       if (!j.disponible) { $('#antError').textContent = j.mensaje; return; }
       const grupos = window.Resumen.agrupar(j.hallazgos, nombreJ).map((g) => ({ ...g, materia: materiaDe(g.codigo), rol: rolDe(g, j.palabras) }));
       const sinFormato = j.hallazgos.filter((h) => !h.expediente).length;
-      REPORTE = { ...j, cuerpo, extra, grupos, sinFormato, cuando: new Date().toISOString() };
+      const variantes = j.variantes ? window.Resumen.agrupar(j.variantes.hallazgos, nombreJ)
+        .map((g) => ({ ...g, materia: materiaDe(g.codigo), rol: rolDe(g, norm(j.variantes.criterio).split(' ')) })) : [];
+      REPORTE = { ...j, cuerpo, extra, grupos, sinFormato, varGrupos: variantes, cuando: new Date().toISOString() };
       pintarReporte();
       if (extra.guardar) {
         const h = leerLS(LS, []);
@@ -169,6 +171,13 @@
         <h4>Expedientes (${d.G.length})</h4>${d.G.map(exp).join('')}`
         : '<p class="nota">Sin resultados en las listas de acuerdos del periodo.</p>'}
       ${R.sinFormato ? `<p class="nota">Además hay ${plural(R.sinFormato, 'mención', 'menciones')} en listas sin formato estándar (por ejemplo, listas reservadas); se pueden ver con la búsqueda normal por nombre.</p>` : ''}
+      ${R.variantes ? `<h3>Posibles variantes por revisar</h3>
+        <p>${R.varGrupos.length
+          ? `Sin el apellido materno ("${esc(R.variantes.criterio)}") aparecen <strong>${plural(R.varGrupos.length, 'expediente')} más</strong>. Muchas listas omiten el segundo apellido, pero también pueden ser <strong>otras personas</strong>: no se suman al resultado principal; revísalos uno por uno.`
+          : `Tampoco aparece sin el apellido materno ("${esc(R.variantes.criterio)}").`}</p>
+        ${R.varGrupos.length ? `<details><summary>Ver ${plural(R.varGrupos.length, 'expediente')} por revisar</summary>
+          ${tabla(['Expediente', 'Juzgado', 'Materia', 'Partes', 'Último acuerdo'], R.varGrupos.slice(0, 150).map((g) => [esc(g.expediente), esc(g.juzgado), esc(g.materia), esc(g.partes), esc(fmtF(g.ultima))]))}
+          ${R.varGrupos.length > 150 ? '<p class="nota">Se muestran los primeros 150.</p>' : ''}</details>` : ''}` : ''}
       <h3>Fuentes consultadas</h3>
       <p class="nota">Listas de acuerdos del Poder Judicial del Estado de San Luis Potosí (${R.fuentes.juzgados} juzgados y salas, fuero común): ${R.fuentes.listas_revisadas.toLocaleString('es-MX')} listas del periodo, del ${esc(fmtF(R.fuentes.archivo_desde))} al ${esc(fmtF(R.fuentes.archivo_hasta))}, revisadas en ${(R.ms / 1000).toFixed(1)} s. Fuente: stjslp.gob.mx/Acuerdos. Los juzgados federales todavía no están incluidos.</p>
       <p><button type="button" class="enlace" id="antAlerta">+ Crear alerta por nombre para "${esc(R.criterio)}"</button></p>`;
@@ -215,6 +224,10 @@
         return b;
       })(),
       { titulo: 'Otras fuentes', texto: 'No consultadas en esta versión: cédulas profesionales (SEP), edictos (Periódico Oficial de SLP) y verificación de CURP (RENAPO).' },
+      ...(R.variantes ? [{ titulo: 'Posibles variantes por revisar (sin apellido materno)', texto: R.varGrupos.length
+        ? `Buscando "${R.variantes.criterio}" (sin el apellido materno) aparecen ${R.varGrupos.length} expediente(s) más. Pueden ser la misma persona escrita sin su segundo apellido o personas distintas; no se suman al resultado principal.`
+        : `Tampoco aparece buscando "${R.variantes.criterio}" (sin el apellido materno).` },
+        ...(R.varGrupos.length ? [{ titulo: '', tabla: { columnas: ['Expediente / juzgado', 'Partes', 'Último acuerdo'], filas: R.varGrupos.slice(0, 60).map((g) => [`${g.expediente} · ${g.juzgado}`, g.partes || '', fmtF(g.ultima)]) } }] : [])] : []),
       ...(d.G.length ? [
         { titulo: 'Resultados por materia', tabla: { columnas: ['Materia', 'Expedientes'], filas: d.materias.map(([k, v]) => [k, String(v)]) } },
         { titulo: 'Resultados por juzgado', tabla: { columnas: ['Juzgado', 'Expedientes'], filas: d.juzgados.map(([k, v]) => [k, String(v)]) } },

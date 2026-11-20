@@ -6,9 +6,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { DATOS } from './rutas.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const CACHE = path.join(DIR, 'data', 'slp');
+const CACHE = path.join(DATOS, 'slp');
 const BASE = 'https://www.stjslp.gob.mx/Archivos/Listas/tradicionales/';
 const UA = 'LechuzaLegal/0.1 (consulta de listas publicas)';
 
@@ -168,14 +169,18 @@ async function descargar(codigo, fecha, url) {
     try {
       const r = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(90000) });
       const ct = r.headers.get('content-type') || '';
-      if (r.status === 404 || (r.ok && !ct.includes('pdf'))) return { codigo, fecha, url, estado: 'sin_lista', detalle: `HTTP ${r.status}` };
+      // Solo un 404 significa "ese día no hubo lista". Una respuesta 200 que no es PDF (página de
+      // mantenimiento, error del servidor) se trata como error para reintentarla después.
+      if (r.status === 404) return { codigo, fecha, url, estado: 'sin_lista', detalle: 'HTTP 404' };
+      if (r.ok && !ct.includes('pdf')) { ultimoError = `respuesta inesperada del sitio (${ct || 'sin tipo'})`; continue; }
       if (!r.ok) { ultimoError = `HTTP ${r.status}`; continue; }
       const buf = Buffer.from(await r.arrayBuffer());
       try {
         const { texto, paginas } = await pdfATexto(buf);
         return { codigo, fecha, url, estado: 'ok', paginas, texto, descargado: new Date().toISOString() };
       } catch (e) {
-        return { codigo, fecha, url, estado: 'error', detalle: 'No se pudo leer el PDF: ' + e.message };
+        // El PDF existe pero está dañado en el sitio oficial: se guarda así para no reintentarlo cada día.
+        return { codigo, fecha, url, estado: 'danado', detalle: 'PDF dañado en la fuente oficial: ' + e.message };
       }
     } catch (e) {
       ultimoError = e.name === 'TimeoutError' ? 'el sitio oficial tardó demasiado' : e.message;

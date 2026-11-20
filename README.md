@@ -79,6 +79,20 @@ sentencias favorables) y artículo 69 (créditos cancelados y condonados). `node
 archivo local (unos 232 mil registros); `ACTUALIZAR ARCHIVO.bat` los vuelve a bajar solo si el SAT los
 cambió. Fuente: https://www.sat.gob.mx/minisitio/DatosAbiertos/contribuyentes_publicados.html
 
+**Posibles variantes:** si escribes el apellido materno, el reporte también busca "nombre + apellido
+paterno" y muestra aparte los expedientes donde la persona aparece **sin** segundo apellido (y sin otro
+nombre pegado antes o después). No se suman al resultado: son para revisar uno por uno.
+
+## Configuración opcional (archivo `app/.env`, no se sube a GitHub)
+
+```
+LECHUZA_DATOS=D:\LechuzaLegal\datos     # carpeta de datos (por defecto app\data)
+LECHUZA_CLAVE=una-clave-larga            # si existe, la página pide esta clave para entrar
+```
+
+La clave de acceso también se puede poner como variable de entorno en Render. Tras 5 intentos fallidos
+se bloquea 10 minutos.
+
 ## Alertas (en la versión instalada)
 
 Una alerta revisa **cada mañana** las listas nuevas y avisa por correo si hay movimiento:

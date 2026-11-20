@@ -24,7 +24,7 @@ process.env.PAUSA_MS = process.env.PAUSA_MS || '300';
 const slp = await import('./slp.js');
 const indice = await import('./indice.js');
 
-const DATA = path.join(DIR, 'data');
+const { DATOS: DATA } = await import('./rutas.js');
 // La actualización diaria (--dias) usa su propio candado y estado, para poder correr mientras sigue
 // la descarga grande sin pisar el avance que muestra la pantalla.
 const DIARIO = !!args.dias;

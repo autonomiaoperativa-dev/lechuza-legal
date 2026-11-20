@@ -8,10 +8,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DATOS } from './rutas.js';
 import { normalizar, normExpediente, pdfUrl } from './slp.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-export const DB_PATH = process.env.LECHUZA_DB || path.join(DIR, 'data', 'lechuza.db');
+export const DB_PATH = process.env.LECHUZA_DB || path.join(DATOS, 'lechuza.db');
 
 let sqlite = null;
 async function cargarSqlite() {
