@@ -10,7 +10,7 @@
 <header class="top">
   <div class="marca">
     <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--acento)"/><circle cx="11" cy="14" r="4.5" fill="#fff"/><circle cx="21" cy="14" r="4.5" fill="#fff"/><circle cx="11" cy="14" r="2" fill="#16324a"/><circle cx="21" cy="14" r="2" fill="#16324a"/><path d="M14 20 L16 23 L18 20 Z" fill="#f2b84b"/></svg>
-    <div><strong>Lechuza Legal</strong><span class="sub">Versión de prueba · listas de acuerdos</span></div>
+    <div><strong>Lechuza Legal</strong><span class="sub">Versión 1.0 de prueba · listas de acuerdos</span></div>
   </div>
   <nav class="tabs" role="tablist">
     <button role="tab" class="tab activo" data-tab="buscar">Buscar</button>
@@ -20,7 +20,9 @@
     <button role="tab" class="tab" data-tab="comparar">Comparar con Buholegal</button>
     <button role="tab" class="tab" data-tab="fuentes">Fuentes</button>
     <button role="tab" class="tab" data-tab="ayuda">Cómo funciona</button>
+    <button role="tab" class="tab" data-tab="cuenta">Cuenta</button>
   </nav>
+  <div id="sesionCaja" class="sesion" hidden><span id="sesionNombre"></span> <button type="button" id="btnSalir" class="enlace">Salir</button></div>
 </header>
 
 <main>
@@ -258,17 +260,78 @@
       <li>Se descargan 4 listas a la vez para no saturar el sitio oficial. Lo ya buscado antes sale al instante, salvo en modo incógnito.</li>
       <li>En la versión en línea (plan gratuito), lo guardado se borra cuando el servidor se “duerme” tras 15 minutos sin uso.</li>
       <li>Las listas de asuntos reservados (“SECRETO”) solo traen números, sin partes.</li>
-      <li>A veces el PDF separa dígitos (“37 8/2026”); esos casos pueden no encontrarse.</li>
+      <li>A veces el PDF separa dígitos (“37 8/2026”). Desde la versión 1.0 se unen y el acuerdo se reconoce como 378/2026; aun así, la conversión de PDF a texto puede fallar en casos raros.</li>
       <li>Un nombre igual no prueba que sea la misma persona (homónimos).</li>
       <li>Es una herramienta de apoyo: no sustituye la revisión del expediente oficial. Información, no asesoría legal.</li>
     </ul>
   </div>
 </section>
+<!-- ============ CUENTA ============ -->
+<section id="cuenta" class="panel">
+  <p id="avisoCambiar" class="tarjeta aviso-cambiar" hidden><strong>Estás usando una contraseña temporal.</strong> Escribe una nueva abajo para poder usar el resto de la plataforma.</p>
+  <div id="cuentaInfo" class="tarjeta nota" hidden></div>
+
+  <form id="formPrimero" class="tarjeta" autocomplete="off" hidden>
+    <h2>Crear la cuenta de administrador</h2>
+    <p class="nota">Hoy la plataforma está abierta para quien entre a esta computadora. Al crear esta cuenta, a partir de ese momento <strong>todos tendrán que entrar con usuario y contraseña</strong>. El administrador da de alta a los demás usuarios, les pone fecha de vencimiento y puede suspenderlos.</p>
+    <div class="ant-grid">
+      <label class="campo">Usuario * <span class="ayuda">sin espacios ni acentos, ej. carlos</span><input id="pUsuario" autocomplete="off" required></label>
+      <label class="campo">Nombre <input id="pNombre"></label>
+      <label class="campo">Correo <input id="pCorreo" type="email"></label>
+      <span></span>
+      <label class="campo">Contraseña * <span class="ayuda">mínimo 10 caracteres, letras y números</span><input id="pContra" type="password" autocomplete="new-password" required></label>
+      <label class="campo">Repetir contraseña * <input id="pContra2" type="password" autocomplete="new-password" required></label>
+    </div>
+    <p class="nota">Anota la contraseña en un lugar seguro: no se guarda en ningún lado de forma legible y nadie la puede recuperar, solo restablecer.</p>
+    <button type="submit" class="primario">Crear administrador y activar el inicio de sesión</button>
+    <p id="pMsg" class="error" role="alert"></p>
+  </form>
+
+  <div id="miCuenta" class="rejilla" hidden>
+    <div class="tarjeta">
+      <h2>Mi cuenta</h2>
+      <dl id="datosCuenta" class="datos"></dl>
+      <button type="button" id="btnSalir2" class="secundario">Cerrar sesión</button>
+    </div>
+    <form id="formContra" class="tarjeta" autocomplete="off">
+      <h2>Cambiar contraseña</h2>
+      <label class="campo">Contraseña actual <input id="cActual" type="password" autocomplete="current-password" required></label>
+      <label class="campo">Nueva contraseña <span class="ayuda">mínimo 10 caracteres, letras y números</span><input id="cNueva" type="password" autocomplete="new-password" required></label>
+      <label class="campo">Repetir nueva contraseña <input id="cNueva2" type="password" autocomplete="new-password" required></label>
+      <button type="submit" class="primario">Guardar contraseña</button>
+      <p id="cMsg" class="nota" role="status"></p>
+    </form>
+  </div>
+
+  <div id="adminCaja" hidden>
+    <form id="formUsuario" class="tarjeta" autocomplete="off">
+      <h2>Dar de alta un usuario</h2>
+      <p class="nota">Se genera una contraseña temporal que se muestra una sola vez. Compártela con la persona por un medio privado; al entrar, el sistema le pedirá cambiarla.</p>
+      <div class="ant-grid">
+        <label class="campo">Usuario * <span class="ayuda">ej. lic.perez</span><input id="nUsuario" autocomplete="off" required></label>
+        <label class="campo">Nombre <input id="nNombre"></label>
+        <label class="campo">Correo <input id="nCorreo" type="email"></label>
+        <label class="campo">Acceso hasta <span class="ayuda">vacío = sin vencimiento</span><input id="nVence" type="date"></label>
+        <label class="campo">Rol <select id="nRol"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></label>
+      </div>
+      <button type="submit" class="primario">Crear usuario</button>
+      <div id="nMsg" role="status"></div>
+    </form>
+    <div class="tarjeta">
+      <div class="fila-tit"><h2>Usuarios <span id="nUsuarios" class="ayuda"></span></h2></div>
+      <p class="nota">“Búsquedas 30 días” cuenta búsquedas y reportes de antecedentes de cada usuario. Al suspender a alguien o al vencer su fecha, ya no puede entrar y se cierran sus sesiones.</p>
+      <div id="tablaUsuarios" class="tabla-scroll"></div>
+      <div id="uMsg" role="status"></div>
+    </div>
+  </div>
+</section>
 </main>
+<footer class="pie-legal">Lechuza Legal · <a href="aviso-privacidad.html" target="_blank">Aviso de privacidad</a> · <a href="terminos.html" target="_blank">Términos y condiciones</a> · Información de apoyo, no asesoría legal.</footer>
 
 <script src="resumen.js"></script>
 <script src="app.js"></script>
 <script src="plataforma.js"></script>
 <script src="antecedentes.js"></script>
+<script src="cuenta.js"></script>
 </body>
 </html>

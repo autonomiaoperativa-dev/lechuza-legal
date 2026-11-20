@@ -12,12 +12,13 @@ import * as indice from './indice.js';
 import { generarResumenPdf } from './pdf.js';
 import * as alertas from './alertas.js';
 import * as sat from './sat.js';
+import * as usuarios from './usuarios.js';
 
 // Archivo local (data/lechuza.db). Si no existe, todo funciona como antes (descargando).
 let DB = null;
 async function obtenerIndice() {
   if (!DB) {
-    try { DB = await indice.abrir(); if (DB) { alertas.prepararTablas(DB); sat.prepararTablas(DB); } } catch (e) { console.error('Archivo local no disponible:', e.message); }
+    try { DB = await indice.abrir(); if (DB) { alertas.prepararTablas(DB); alertas.prepararDueno(DB); sat.prepararTablas(DB); usuarios.prepararTablas(DB); } } catch (e) { console.error('Archivo local no disponible:', e.message); }
   }
   return DB;
 }
@@ -209,82 +210,189 @@ async function antecedentes(req, res) {
   });
 }
 
-async function rutasAlertas(req, res, u) {
+async function rutasAlertas(req, res, u, ctx) {
+  const quien = ctx.quien;
   const db = await obtenerIndice();
   if (!db) return json(res, 200, { disponible: false, mensaje: 'Las alertas funcionan en la versión instalada en la computadora, donde está el archivo local de listas.' });
   try {
     if (u.pathname === '/api/alertas' && req.method === 'GET') {
-      return json(res, 200, { disponible: true, correo: alertas.correoConfigurado(), alertas: alertas.listar(db) });
+      return json(res, 200, { disponible: true, correo: alertas.correoConfigurado(), alertas: alertas.listar(db, quien) });
     }
-    if (u.pathname === '/api/alertas' && req.method === 'POST') return json(res, 200, alertas.crear(db, await leerCuerpo(req)));
+    if (u.pathname === '/api/alertas' && req.method === 'POST') return json(res, 200, alertas.crear(db, await leerCuerpo(req), quien));
     if (u.pathname === '/api/alertas/revisar' && req.method === 'POST') {
       const r = await alertas.revisar(db);
       let correo = null;
       try { correo = await alertas.enviarPendientes(db); } catch (e) { correo = { correos: 0, motivo: e.message }; }
       return json(res, 200, { revisadas: r.length, nuevas: r.reduce((s, a) => s + a.nuevas, 0), correo });
     }
-    if (u.pathname === '/api/novedades' && req.method === 'GET') return json(res, 200, { novedades: alertas.novedades(db) });
-    if (u.pathname === '/api/novedades' && req.method === 'POST') { alertas.marcarVistas(db, (await leerCuerpo(req)).alerta_id); return json(res, 200, { ok: true }); }
+    if (u.pathname === '/api/novedades' && req.method === 'GET') return json(res, 200, { novedades: alertas.novedades(db, {}, quien) });
+    if (u.pathname === '/api/novedades' && req.method === 'POST') { alertas.marcarVistas(db, (await leerCuerpo(req)).alerta_id, quien); return json(res, 200, { ok: true }); }
     const m = u.pathname.match(/^\/api\/alertas\/(\d+)$/);
-    if (m && req.method === 'POST') return json(res, 200, alertas.actualizar(db, Number(m[1]), await leerCuerpo(req)));
-    if (m && req.method === 'DELETE') { alertas.borrar(db, Number(m[1])); return json(res, 200, { ok: true }); }
+    if (m && req.method === 'POST') return json(res, 200, alertas.actualizar(db, Number(m[1]), await leerCuerpo(req), quien));
+    if (m && req.method === 'DELETE') { alertas.borrar(db, Number(m[1]), quien); return json(res, 200, { ok: true }); }
     return json(res, 404, { error: 'no encontrado' });
   } catch (e) {
     return json(res, 400, { error: e.message });
   }
 }
 
-// ---------- clave de acceso (opcional) ----------
-// Si existe la variable LECHUZA_CLAVE (en app/.env o en Render), la página pide esa clave antes de
-// dejar buscar. Sin la variable, todo queda abierto como antes (uso en la propia computadora).
+// ---------- acceso: cuentas de usuario, clave única o abierto ----------
+// 1) Si en el archivo local existe al menos una cuenta, se pide usuario y contraseña (modo "usuarios").
+// 2) Si no hay cuentas pero existe LECHUZA_CLAVE (app/.env o Render), se pide esa clave (modo "clave").
+// 3) Si no hay ninguna de las dos, la aplicación queda abierta (uso en la propia computadora).
 const CLAVE = process.env.LECHUZA_CLAVE || '';
-const TOKEN = CLAVE ? crypto.createHash('sha256').update('lechuza-legal:' + CLAVE).digest('hex') : '';
+const TOKEN_CLAVE = CLAVE ? crypto.createHash('sha256').update('lechuza-legal:' + CLAVE).digest('hex') : '';
 const intentos = new Map(); // ip -> { n, desde }
-function autorizado(req) {
-  if (!CLAVE) return true;
-  const c = (req.headers.cookie || '').split(';').map((x) => x.trim()).find((x) => x.startsWith('lechuza_sesion='));
-  const v = c ? c.slice('lechuza_sesion='.length) : '';
-  return v.length === TOKEN.length && crypto.timingSafeEqual(Buffer.from(v), Buffer.from(TOKEN));
+const ipDe = (req) => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+const esEstaComputadora = (req) => !req.headers['x-forwarded-for'] && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+function cookie(req, nombre) {
+  const c = (req.headers.cookie || '').split(';').map((x) => x.trim()).find((x) => x.startsWith(nombre + '='));
+  return c ? decodeURIComponent(c.slice(nombre.length + 1)) : '';
 }
-const PAGINA_ENTRAR = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lechuza Legal · Entrar</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f6f9;color:#1b2733;font:15px system-ui,sans-serif}
-@media (prefers-color-scheme:dark){body{background:#0f1620;color:#e6edf3}form{background:#18222e!important;border-color:#2a3746!important}input{background:#0f1620;color:#e6edf3;border-color:#2a3746!important}}
-form{background:#fff;border:1px solid #dde3ea;border-radius:12px;padding:24px;width:min(340px,90vw)}h1{font-size:18px;margin:0 0 4px}p{color:#5b6b7b;font-size:13px;margin:0 0 14px}
-input{display:block;width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #dde3ea;border-radius:8px;font:inherit;margin-bottom:10px}
-button{width:100%;padding:10px;border:0;border-radius:8px;background:#16324a;color:#fff;font:600 14px system-ui;cursor:pointer}#e{color:#b3261e;font-size:13px;min-height:1em}</style></head>
-<body><form id="f"><h1>Lechuza Legal</h1><p>Escribe la clave de acceso que te compartieron.</p>
-<input type="password" id="c" autocomplete="current-password" aria-label="Clave de acceso" required autofocus><button>Entrar</button><p id="e" role="alert"></p></form>
-<script>document.getElementById('f').onsubmit=async(ev)=>{ev.preventDefault();const r=await fetch('/api/entrar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clave:document.getElementById('c').value})});
-if(r.ok)location.reload();else document.getElementById('e').textContent=(await r.json().catch(()=>({}))).error||'Clave incorrecta.';};</script></body></html>`;
-async function entrar(req, res) {
-  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+function bloqueado(req) {
+  const a = intentos.get(ipDe(req));
+  return a && Date.now() - a.desde < 10 * 60000 && a.n >= 5;
+}
+function fallo(req) {
+  const ip = ipDe(req);
   const a = intentos.get(ip) || { n: 0, desde: Date.now() };
   if (Date.now() - a.desde > 10 * 60000) { a.n = 0; a.desde = Date.now(); }
-  if (a.n >= 5) return json(res, 429, { error: 'Demasiados intentos. Espera 10 minutos.' });
+  a.n++; intentos.set(ip, a);
+}
+const cookieSesion = (req, nombre, valor, dias) => `${nombre}=${valor}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${dias * 86400}${req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''}`;
+
+async function contexto(req) {
+  const db = await obtenerIndice();
+  if (db && usuarios.hayUsuarios(db)) {
+    const u = usuarios.sesion(db, cookie(req, 'lechuza_cuenta'));
+    return { modo: 'usuarios', ok: !!u, usuario: u, quien: u ? { id: u.id, admin: u.rol === 'admin' } : null, db };
+  }
+  if (CLAVE) {
+    const v = cookie(req, 'lechuza_sesion');
+    const ok = v.length === TOKEN_CLAVE.length && crypto.timingSafeEqual(Buffer.from(v), Buffer.from(TOKEN_CLAVE));
+    return { modo: 'clave', ok, usuario: null, quien: null, db };
+  }
+  return { modo: 'abierto', ok: true, usuario: null, quien: null, db };
+}
+
+const ESTILO_ENTRAR = `<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f6f9;color:#1b2733;font:15px system-ui,sans-serif}
+@media (prefers-color-scheme:dark){body{background:#0f1620;color:#e6edf3}form{background:#18222e!important;border-color:#2a3746!important}input{background:#0f1620;color:#e6edf3;border-color:#2a3746!important}a{color:#6fb1e3}}
+form{background:#fff;border:1px solid #dde3ea;border-radius:12px;padding:24px;width:min(340px,90vw)}h1{font-size:18px;margin:0 0 4px}p{color:#5b6b7b;font-size:13px;margin:0 0 14px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}input{display:block;width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #dde3ea;border-radius:8px;font:inherit;margin-bottom:12px}
+button{width:100%;padding:10px;border:0;border-radius:8px;background:#16324a;color:#fff;font:600 14px system-ui;cursor:pointer}#e{color:#b3261e;font-size:13px;min-height:1em}
+.pie{margin:14px 0 0;font-size:12px;text-align:center}a{color:#2f6f9f}</style>`;
+const PIE_LEGAL = `<p class="pie"><a href="/aviso-privacidad.html" target="_blank">Aviso de privacidad</a> · <a href="/terminos.html" target="_blank">Términos y condiciones</a></p>`;
+const PAGINA_CLAVE = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lechuza Legal · Entrar</title>${ESTILO_ENTRAR}</head>
+<body><form id="f"><h1>Lechuza Legal</h1><p>Escribe la clave de acceso que te compartieron.</p>
+<input type="password" id="c" autocomplete="current-password" aria-label="Clave de acceso" required autofocus><button>Entrar</button><p id="e" role="alert"></p>${PIE_LEGAL}</form>
+<script>document.getElementById('f').onsubmit=async(ev)=>{ev.preventDefault();const r=await fetch('/api/entrar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clave:document.getElementById('c').value})});
+if(r.ok)location.reload();else document.getElementById('e').textContent=(await r.json().catch(()=>({}))).error||'Clave incorrecta.';};</script></body></html>`;
+const PAGINA_LOGIN = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lechuza Legal · Iniciar sesión</title>${ESTILO_ENTRAR}</head>
+<body><form id="f"><h1>Lechuza Legal</h1><p>Inicia sesión con tu usuario y contraseña.</p>
+<label for="u">Usuario</label><input id="u" autocomplete="username" required autofocus>
+<label for="c">Contraseña</label><input type="password" id="c" autocomplete="current-password" required>
+<button>Entrar</button><p id="e" role="alert"></p><p class="pie">¿Olvidaste tu contraseña? Pide al administrador que la restablezca.</p>${PIE_LEGAL}</form>
+<script>document.getElementById('f').onsubmit=async(ev)=>{ev.preventDefault();const b=ev.submitter;b.disabled=true;
+const r=await fetch('/api/sesion/entrar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario:document.getElementById('u').value,contrasena:document.getElementById('c').value})});
+b.disabled=false;if(r.ok)location.reload();else document.getElementById('e').textContent=(await r.json().catch(()=>({}))).error||'No se pudo entrar.';};</script></body></html>`;
+
+async function entrarClave(req, res) {
+  if (bloqueado(req)) return json(res, 429, { error: 'Demasiados intentos. Espera 10 minutos.' });
   const { clave } = await leerCuerpo(req, 2000);
   const ok = typeof clave === 'string' && clave.length === CLAVE.length && crypto.timingSafeEqual(Buffer.from(clave), Buffer.from(CLAVE));
-  if (!ok) { a.n++; intentos.set(ip, a); return json(res, 401, { error: 'Clave incorrecta.' }); }
-  intentos.delete(ip);
-  const seguro = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
-  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Set-Cookie': `lechuza_sesion=${TOKEN}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${30 * 86400}${seguro}` });
+  if (!ok) { fallo(req); return json(res, 401, { error: 'Clave incorrecta.' }); }
+  intentos.delete(ipDe(req));
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Set-Cookie': cookieSesion(req, 'lechuza_sesion', TOKEN_CLAVE, 30) });
   res.end('{"ok":true}');
 }
+
+// Rutas de cuenta: /api/sesion..., /api/usuarios...
+async function rutasCuenta(req, res, u, ctx) {
+  const db = ctx.db;
+  try {
+    if (u.pathname === '/api/sesion' && req.method === 'GET') {
+      return json(res, 200, { modo: ctx.modo, usuario: ctx.usuario, cuentas_disponibles: !!db,
+        hay_usuarios: db ? usuarios.hayUsuarios(db) : false, puede_crear_primero: !!db && !usuarios.hayUsuarios(db) && esEstaComputadora(req) });
+    }
+    if (u.pathname === '/api/sesion/entrar' && req.method === 'POST') {
+      if (!db || !usuarios.hayUsuarios(db)) return json(res, 400, { error: 'No hay cuentas configuradas.' });
+      if (bloqueado(req)) return json(res, 429, { error: 'Demasiados intentos. Espera 10 minutos.' });
+      const q = await leerCuerpo(req, 4000);
+      try {
+        const s = usuarios.entrar(db, q.usuario, q.contrasena);
+        intentos.delete(ipDe(req));
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Set-Cookie': cookieSesion(req, 'lechuza_cuenta', s.token, s.dias) });
+        return res.end(JSON.stringify({ ok: true, usuario: s.usuario }));
+      } catch (e) { fallo(req); return json(res, 401, { error: e.message }); }
+    }
+    if (u.pathname === '/api/sesion/salir' && req.method === 'POST') {
+      if (db) usuarios.salir(db, cookie(req, 'lechuza_cuenta'));
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Set-Cookie': 'lechuza_cuenta=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
+      return res.end('{"ok":true}');
+    }
+    // La primera cuenta (administrador) solo se puede crear desde esta computadora y cuando aún no hay ninguna.
+    if (u.pathname === '/api/usuarios/primero' && req.method === 'POST') {
+      if (!db) return json(res, 400, { error: 'Las cuentas necesitan el archivo local.' });
+      if (usuarios.hayUsuarios(db)) return json(res, 400, { error: 'Ya existe una cuenta de administrador.' });
+      if (!esEstaComputadora(req)) return json(res, 403, { error: 'La primera cuenta solo se puede crear desde la computadora donde corre Lechuza Legal.' });
+      const q = await leerCuerpo(req, 4000);
+      const nuevo = usuarios.crear(db, { ...q, rol: 'admin' });
+      const s = usuarios.entrar(db, nuevo.usuario, q.contrasena);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Set-Cookie': cookieSesion(req, 'lechuza_cuenta', s.token, s.dias) });
+      return res.end(JSON.stringify({ ok: true, usuario: nuevo }));
+    }
+    if (u.pathname === '/api/sesion/contrasena' && req.method === 'POST') {
+      if (!ctx.usuario) return json(res, 401, { error: 'Inicia sesión primero.' });
+      const q = await leerCuerpo(req, 4000);
+      usuarios.cambiarContrasena(db, ctx.usuario.id, q.actual, q.nueva);
+      return json(res, 200, { ok: true });
+    }
+    // ---- administración de usuarios (solo administradores) ----
+    if (u.pathname.startsWith('/api/usuarios')) {
+      if (!ctx.usuario || ctx.usuario.rol !== 'admin') return json(res, 403, { error: 'Solo un administrador puede hacer esto.' });
+      if (u.pathname === '/api/usuarios' && req.method === 'GET') return json(res, 200, { usuarios: usuarios.listar(db) });
+      if (u.pathname === '/api/usuarios' && req.method === 'POST') {
+        const q = await leerCuerpo(req, 4000);
+        const temporal = usuarios.contrasenaTemporal();
+        const nuevo = usuarios.crear(db, { ...q, contrasena: temporal, debeCambiar: true });
+        return json(res, 200, { usuario: nuevo, contrasena_temporal: temporal });
+      }
+      const m = u.pathname.match(/^\/api\/usuarios\/(\d+)(\/restablecer)?$/);
+      if (m && req.method === 'POST' && m[2]) return json(res, 200, { contrasena_temporal: usuarios.restablecer(db, Number(m[1])) });
+      if (m && req.method === 'POST') return json(res, 200, usuarios.actualizar(db, Number(m[1]), await leerCuerpo(req, 4000), ctx.usuario));
+    }
+    return json(res, 404, { error: 'no encontrado' });
+  } catch (e) {
+    return json(res, 400, { error: e.message });
+  }
+}
+
+// Archivos que se pueden ver sin iniciar sesión (página de entrada y textos legales)
+const PUBLICOS = new Set(['/aviso-privacidad.html', '/terminos.html', '/estilos.css', '/favicon.ico']);
 
 const server = http.createServer(async (req, res) => {
   try {
     const u = new URL(req.url, `http://${req.headers.host}`);
-    if (u.pathname === '/api/entrar' && req.method === 'POST' && CLAVE) return await entrar(req, res);
-    if (!autorizado(req)) {
+    const ctx = await contexto(req);
+    if (u.pathname === '/api/entrar' && req.method === 'POST' && ctx.modo === 'clave') return await entrarClave(req, res);
+    if (u.pathname === '/api/sesion' || u.pathname.startsWith('/api/sesion/') || u.pathname.startsWith('/api/usuarios')) return await rutasCuenta(req, res, u, ctx);
+    if (!ctx.ok && !PUBLICOS.has(u.pathname)) {
       if (u.pathname === '/api/estado' && req.method === 'GET' && req.headers['user-agent']?.includes('Render')) return json(res, 200, { ok: true }); // chequeo de salud de Render
-      if (u.pathname.startsWith('/api/')) return json(res, 401, { error: 'Se necesita la clave de acceso.' });
+      if (u.pathname.startsWith('/api/')) return json(res, 401, { error: ctx.modo === 'usuarios' ? 'Inicia sesión.' : 'Se necesita la clave de acceso.' });
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-      return res.end(PAGINA_ENTRAR);
+      return res.end(ctx.modo === 'usuarios' ? PAGINA_LOGIN : PAGINA_CLAVE);
+    }
+    // con contraseña temporal, primero hay que cambiarla
+    if (ctx.usuario && ctx.usuario.debe_cambiar && u.pathname.startsWith('/api/') && !['/api/estado', '/api/juzgados'].includes(u.pathname)) {
+      return json(res, 403, { error: 'Cambia tu contraseña temporal en la pestaña Cuenta para continuar.', debe_cambiar: true });
     }
     if (u.pathname === '/api/juzgados') return json(res, 200, await slp.catalogo());
     if (u.pathname === '/api/fuentes') return json(res, 200, await fuentes());
-    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '0.9', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
-    if (u.pathname === '/api/buscar' && req.method === 'POST') return await buscar(req, res);
-    if (u.pathname.startsWith('/api/alertas') || u.pathname === '/api/novedades') return await rutasAlertas(req, res, u);
+    if (u.pathname === '/api/estado') return json(res, 200, { hoy: slp.hoyMexico(), version: '1.0', max_listas: MAX_LISTAS, descargas_a_la_vez: slp.MAX_DESCARGAS, archivo: await estadoArchivo() });
+    if (u.pathname === '/api/buscar' && req.method === 'POST') { if (ctx.db) usuarios.registrarUso(ctx.db, ctx.usuario?.id, 'busqueda'); return await buscar(req, res); }
+    if (u.pathname.startsWith('/api/alertas') || u.pathname === '/api/novedades') return await rutasAlertas(req, res, u, ctx);
     if (u.pathname === '/api/pdf' && req.method === 'POST') {
       const q = await leerCuerpo(req, 20e6);
       const grupos = Array.isArray(q.grupos) ? q.grupos.slice(0, 200) : [];
@@ -296,7 +404,7 @@ const server = http.createServer(async (req, res) => {
         nombreArchivo: q.nombreArchivo ? String(q.nombreArchivo).replace(/[^\w.-]+/g, '_').slice(0, 80) : undefined,
       });
     }
-    if (u.pathname === '/api/antecedentes' && req.method === 'POST') return await antecedentes(req, res);
+    if (u.pathname === '/api/antecedentes' && req.method === 'POST') { if (ctx.db) usuarios.registrarUso(ctx.db, ctx.usuario?.id, 'antecedentes'); return await antecedentes(req, res); }
     // archivos de la vista
     const rel = u.pathname === '/' ? 'index.html' : u.pathname.slice(1);
     const file = path.join(DIR, 'public', path.normalize(rel));

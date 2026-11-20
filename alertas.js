@@ -50,12 +50,30 @@ export function prepararTablas(db) {
 const ayer = (iso) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
 const manana = (iso) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
 
-export function listar(db) {
-  return db.prepare(`SELECT a.*, (SELECT COUNT(*) FROM novedades n WHERE n.alerta_id = a.id AND n.vista = 0) AS sin_ver
-    FROM alertas a ORDER BY COALESCE(a.ultima_novedad, a.creada) DESC`).all().map((a) => ({ ...a }));
+// ---------- dueño de cada alerta ----------
+// quien = { id, admin } del usuario con sesión, o null cuando no hay cuentas (modo abierto o clave única).
+// Un usuario ve solo sus alertas; un administrador ve las suyas y las creadas antes de que hubiera cuentas.
+function filtro(quien, alias = 'a') {
+  if (!quien) return { sql: '1 = 1', args: [] };
+  return quien.admin ? { sql: `(${alias}.usuario_id = ? OR ${alias}.usuario_id IS NULL)`, args: [quien.id] } : { sql: `${alias}.usuario_id = ?`, args: [quien.id] };
+}
+function verificarDueno(db, id, quien) {
+  const a = db.prepare('SELECT * FROM alertas WHERE id = ?').get(id);
+  if (!a) throw new Error('No existe esa alerta.');
+  if (quien && !(a.usuario_id === quien.id || (quien.admin && a.usuario_id == null))) throw new Error('No existe esa alerta.');
+  return a;
+}
+export function prepararDueno(db) {
+  try { db.exec('ALTER TABLE alertas ADD COLUMN usuario_id INTEGER'); } catch {}
 }
 
-export function crear(db, { tipo, valor, etiqueta, juzgados, en_texto, correo }) {
+export function listar(db, quien = null) {
+  const f = filtro(quien);
+  return db.prepare(`SELECT a.*, (SELECT COUNT(*) FROM novedades n WHERE n.alerta_id = a.id AND n.vista = 0) AS sin_ver
+    FROM alertas a WHERE ${f.sql} ORDER BY COALESCE(a.ultima_novedad, a.creada) DESC`).all(...f.args).map((a) => ({ ...a }));
+}
+
+export function crear(db, { tipo, valor, etiqueta, juzgados, en_texto, correo }, quien = null) {
   if (!['expediente', 'nombre'].includes(tipo)) throw new Error('Tipo de alerta no válido.');
   let v = String(valor || '').trim();
   if (tipo === 'expediente') {
@@ -67,19 +85,19 @@ export function crear(db, { tipo, valor, etiqueta, juzgados, en_texto, correo })
   const cods = (Array.isArray(juzgados) ? juzgados : String(juzgados || '').split(',')).map((s) => s.trim()).filter((c) => /^[A-Z0-9]{1,6}$/.test(c));
   const mail = String(correo || '').trim();
   if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) throw new Error('El correo no parece válido.');
-  const ya = db.prepare('SELECT id FROM alertas WHERE tipo = ? AND valor = ? AND COALESCE(juzgados, \'\') = ?').get(tipo, v, cods.join(','));
-  if (ya) throw new Error('Ya existe una alerta igual.');
+  const f = filtro(quien);
+  const ya = db.prepare(`SELECT id FROM alertas a WHERE tipo = ? AND valor = ? AND COALESCE(juzgados, '') = ? AND ${f.sql}`).get(tipo, v, cods.join(','), ...f.args);
+  if (ya) throw new Error('Ya tienes una alerta igual.');
   const hoy = hoyMexico();
   // Arranca revisando desde hoy: lo anterior se puede ver con una búsqueda normal.
-  const r = db.prepare(`INSERT INTO alertas (tipo, valor, etiqueta, juzgados, en_texto, correo, creada, revisada_hasta)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(tipo, v, String(etiqueta || '').trim().slice(0, 80) || null, cods.join(',') || null,
-    en_texto ? 1 : 0, mail || null, new Date().toISOString(), ayer(hoy));
+  const r = db.prepare(`INSERT INTO alertas (tipo, valor, etiqueta, juzgados, en_texto, correo, creada, revisada_hasta, usuario_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(tipo, v, String(etiqueta || '').trim().slice(0, 80) || null, cods.join(',') || null,
+    en_texto ? 1 : 0, mail || null, new Date().toISOString(), ayer(hoy), quien ? quien.id : null);
   return db.prepare('SELECT * FROM alertas WHERE id = ?').get(r.lastInsertRowid);
 }
 
-export function actualizar(db, id, cambios) {
-  const a = db.prepare('SELECT * FROM alertas WHERE id = ?').get(id);
-  if (!a) throw new Error('No existe esa alerta.');
+export function actualizar(db, id, cambios, quien = null) {
+  const a = verificarDueno(db, id, quien);
   const activa = cambios.activa === undefined ? a.activa : (cambios.activa ? 1 : 0);
   const etiqueta = cambios.etiqueta === undefined ? a.etiqueta : String(cambios.etiqueta).trim().slice(0, 80) || null;
   let correo = cambios.correo === undefined ? a.correo : String(cambios.correo).trim() || null;
@@ -88,19 +106,22 @@ export function actualizar(db, id, cambios) {
   return db.prepare('SELECT * FROM alertas WHERE id = ?').get(id);
 }
 
-export function borrar(db, id) {
+export function borrar(db, id, quien = null) {
+  verificarDueno(db, id, quien);
   db.prepare('DELETE FROM novedades WHERE alerta_id = ?').run(id);
   db.prepare('DELETE FROM alertas WHERE id = ?').run(id);
 }
 
-export function novedades(db, { limite = 200 } = {}) {
+export function novedades(db, { limite = 200 } = {}, quien = null) {
+  const f = filtro(quien);
   return db.prepare(`SELECT n.*, a.tipo, a.valor, a.etiqueta, a.correo FROM novedades n JOIN alertas a ON a.id = n.alerta_id
-    ORDER BY n.fecha DESC, n.id DESC LIMIT ?`).all(limite).map((r) => ({ ...r }));
+    WHERE ${f.sql} ORDER BY n.fecha DESC, n.id DESC LIMIT ?`).all(...f.args, limite).map((r) => ({ ...r }));
 }
 
-export function marcarVistas(db, alertaId) {
-  if (alertaId) db.prepare('UPDATE novedades SET vista = 1 WHERE alerta_id = ?').run(alertaId);
-  else db.prepare('UPDATE novedades SET vista = 1').run();
+export function marcarVistas(db, alertaId, quien = null) {
+  const f = filtro(quien);
+  if (alertaId) { verificarDueno(db, alertaId, quien); db.prepare('UPDATE novedades SET vista = 1 WHERE alerta_id = ?').run(alertaId); }
+  else db.prepare(`UPDATE novedades SET vista = 1 WHERE alerta_id IN (SELECT a.id FROM alertas a WHERE ${f.sql})`).run(...f.args);
 }
 
 // Revisa cada alerta activa contra lo que hay en el archivo desde su última revisión.

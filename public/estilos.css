@@ -168,3 +168,16 @@ button.primario-chico { border: 0; border-radius: 8px; padding: 6px 12px; backgr
 #progresoCaja.terminado .barra div { background: var(--ok); }
 #progresoCaja.cancelado #progresoTxt { color: var(--aviso); }
 #progresoCaja.cancelado .barra div { background: var(--aviso); }
+
+/* ---------- cuenta y sesión ---------- */
+.sesion { font-size: 13px; color: var(--suave); display: flex; gap: 6px; align-items: center; }
+.sesion strong { color: var(--texto); }
+.aviso-cambiar { border-left: 4px solid var(--aviso); }
+.datos { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 14px; margin: 0 0 14px; }
+.datos dt { color: var(--suave); } .datos dd { margin: 0; }
+.temporal { margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--resalta); font-size: 14px; }
+.temporal code { font-size: 18px; letter-spacing: 1px; user-select: all; }
+.estado-ok { color: var(--ok); } .estado-mal { color: var(--mal); }
+#tablaUsuarios input[type=date] { font: inherit; font-size: 12px; padding: 2px 4px; }
+#tablaUsuarios td button { margin: 2px 4px 2px 0; }
+.pie-legal { text-align: center; font-size: 12px; color: var(--suave); padding: 18px 16px 28px; }

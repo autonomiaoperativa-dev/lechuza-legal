@@ -57,7 +57,8 @@ export function normalizar(s) {
     .toLowerCase().replace(/[^a-z0-9/ ]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 export function normExpediente(s) {
-  const m = String(s || '').match(/(\d+)\s*\/\s*(\d{4})/);
+  // "37 8/2026" (dígitos que el PDF separó) cuenta como 378/2026
+  const m = String(s || '').replace(/(\d) (?=\d{1,3}\s*\/)/g, '$1').match(/(\d+)\s*\/\s*(\d{4})/);
   return m ? `${parseInt(m[1], 10)}/${m[2]}` : null;
 }
 
@@ -67,9 +68,19 @@ async function pdfATexto(buf) {
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
     const tc = await page.getTextContent();
+    let prev = null;
     for (const it of tc.items) {
+      // Algunos PDF dibujan un número en pedazos ("37" + "8/2026"). Si dos pedazos con dígitos están en la
+      // misma línea y se tocan, se unen sin espacio para no partir el número de expediente.
+      if (prev && !prev.hasEOL && texto.endsWith(' ') && /[\d/]$/.test(prev.str) && /^[\d/]/.test(it.str)) {
+        const alto = Math.abs(it.transform[3]) || Math.abs(prev.transform[3]) || 10;
+        const mismaLinea = Math.abs(it.transform[5] - prev.transform[5]) < alto * 0.5;
+        const hueco = it.transform[4] - (prev.transform[4] + prev.width);
+        if (mismaLinea && hueco < alto * 0.25) texto = texto.slice(0, -1);
+      }
       texto += it.str;
       texto += it.hasEOL ? '\n' : (it.str.endsWith(' ') ? '' : ' ');
+      prev = it;
     }
     texto += '\n';
   }
@@ -80,7 +91,7 @@ async function pdfATexto(buf) {
 
 // Separa la lista en acuerdos. Cada acuerdo empieza con "Expediente: NNN/AAAA.- Actor VS Demandado.-"
 // Las listas penales usan "CAUSA PENAL 1333/2024"; las salas usan "Toca".
-const RE_EXP = /(Expediente|Causa\s+Penal|Carpeta(?:\s+(?:Judicial|Administrativa|de\s+Ejecuci[oó]n))?|Toca(?:\s+(?:Civil|Penal|Familiar|Mercantil))?|Exhorto|Cuadernillo)\s*(?:No\.?|n[úu]m(?:ero)?\.?)?\s*[:.]?\s*(\d+\s*\/\s*\d{4})/gi;
+const RE_EXP = /(Expediente|Causa\s+Penal|Carpeta(?:\s+(?:Judicial|Administrativa|de\s+Ejecuci[oó]n))?|Toca(?:\s+(?:Civil|Penal|Familiar|Mercantil))?|Exhorto|Cuadernillo)\s*(?:No\.?|n[úu]m(?:ero)?\.?)?\s*[:.]?\s*(\d+(?: \d{1,3})*\s*\/\s*\d{4})/gi;
 export function separarAcuerdos(texto) {
   const idx = [];
   let m;
@@ -114,7 +125,7 @@ export function separarAcuerdos(texto) {
     const sig = tipoDe(bloque);
     if (sig && i + 1 < idx.length) bloque = bloque.slice(0, bloque.trim().lastIndexOf(sig.split(' ')[0]));
     const limpio = bloque.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-    const trasExp = limpio.replace(/^[^0-9]*\d+\s*\/\s*\d{4}\s*/i, '').replace(/^[.\-–\s]+/, '');
+    const trasExp = limpio.replace(/^[^0-9]*\d+(?: \d{1,3})*\s*\/\s*\d{4}\s*/i, '').replace(/^[.\-–\s]+/, '');
     const corte = trasExp.search(/\.\s*-|\.-/);
     const partes = (corte > 0 && corte < 400 ? trasExp.slice(0, corte) : trasExp.slice(0, 200)).trim();
     acuerdos.push({

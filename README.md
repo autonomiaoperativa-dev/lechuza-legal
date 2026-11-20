@@ -93,6 +93,35 @@ LECHUZA_CLAVE=una-clave-larga            # si existe, la página pide esta clave
 La clave de acceso también se puede poner como variable de entorno en Render. Tras 5 intentos fallidos
 se bloquea 10 minutos.
 
+## Cuentas de usuario (versión 1.0, en la versión instalada)
+
+Para dar acceso a varias personas (y más adelante venderlo), cada quien entra con **usuario y contraseña**.
+
+1. En la computadora donde corre Lechuza Legal, abre la pestaña **Cuenta** y crea la cuenta de
+   **administrador** con tu propia contraseña (mínimo 10 caracteres, letras y números). Desde ese momento
+   la página pide usuario y contraseña a todos. La primera cuenta solo se puede crear desde esa computadora.
+2. En **Cuenta → Dar de alta un usuario** creas a los demás: usuario, nombre, correo, rol y fecha
+   "Acceso hasta" (vacía = sin vencimiento). Se muestra **una sola vez** una contraseña temporal; al entrar,
+   el sistema le pide a la persona cambiarla.
+3. En la tabla de usuarios puedes cambiar el rol o la fecha de vencimiento, **suspender/reactivar** y
+   **restablecer la contraseña**. La columna "Búsquedas 30 días" cuenta el uso de cada quien.
+
+Cada usuario ve solo sus propias alertas (el administrador ve también las creadas antes de que hubiera
+cuentas). Las contraseñas se guardan cifradas de forma irreversible: nadie puede leerlas, solo restablecerlas.
+Las cuentas viven en el archivo local, así que la versión en línea (Render) sigue con la clave compartida.
+
+Los borradores de **aviso de privacidad** y **términos y condiciones** están en `public/aviso-privacidad.html`
+y `public/terminos.html`, enlazados en la página de entrada y al pie. Son borradores: falta llenar los
+datos entre corchetes y que los revise un abogado.
+
+## Copia de seguridad semanal
+
+`RESPALDAR ARCHIVO.bat` copia el archivo local (listas, alertas, usuarios, SAT) a `C:\LechuzaLegal\respaldos`,
+en un disco distinto del original (D:), revisa que la copia esté sana y conserva las 2 más recientes. Windows
+lo corre solo los domingos a las 3:00 (tarea "Lechuza Legal - respaldo semanal"); si la computadora estaba
+apagada, corre al encenderla. Cada copia ocupa unos 9 GB y tarda unos 7 minutos. Registro: `respaldo.log`
+en la carpeta de datos.
+
 ## Alertas (en la versión instalada)
 
 Una alerta revisa **cada mañana** las listas nuevas y avisa por correo si hay movimiento:
@@ -151,6 +180,8 @@ En modo normal, las listas descargadas se guardan en `data/` para no pedirlas ot
 
 - `server.js`: servidor local (Node).
 - `slp.js`: descarga, lectura del PDF y búsqueda para SLP.
+- `usuarios.js`: cuentas, contraseñas y sesiones. `alertas.js`: alertas por usuario.
+- `respaldar.js`: copia de seguridad. `reprocesar-digitos.js`: corrección de números con dígitos separados.
 - `fuentes/slp_juzgados.csv`: los 75 juzgados y salas con su código.
 - `fuentes/investigacion_*.json`: 70 fuentes jurídicas revisadas el 18-11-2026 (pestaña Fuentes).
 - `public/`: la pantalla (HTML, CSS, JS).
@@ -160,5 +191,6 @@ En modo normal, las listas descargadas se guardan en `data/` para no pedirlas ot
 - Máximo 1,500 listas por búsqueda (juzgados × días hábiles), con 4 descargas a la vez. Se puede cambiar con
   las variables `MAX_LISTAS` y `MAX_DESCARGAS`. El sitio oficial tiene listas desde el 3 de noviembre de 2010.
 - Las listas reservadas ("SECRETO") solo traen números, sin partes.
-- Si el PDF separa dígitos ("37 8/2026"), ese expediente puede no encontrarse.
+- Si el PDF separa dígitos ("37 8/2026"), desde la versión 1.0 se unen (378/2026). El archivo ya guardado se
+  corrigió con `node reprocesar-digitos.js` (se puede repetir sin riesgo; `--prueba` solo cuenta).
 - Un nombre igual no prueba que sea la misma persona (homónimos).
