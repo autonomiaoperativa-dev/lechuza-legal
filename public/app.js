@@ -22,9 +22,21 @@ function habilesAtras(n) {
 }
 function ponerUltimos(n) {
   const h = habilesAtras(n);
-  $('#desde').value = h[h.length - 1]; $('#hasta').value = h[0]; calcular();
+  $('#desde').value = h[h.length - 1]; $('#hasta').value = h[0];
+  document.querySelectorAll('.chip[data-anios], .chip[data-dias]').forEach((c) => c.classList.toggle('chip-activo', c.dataset.dias === String(n)));
+  calcular();
 }
 document.querySelectorAll('.chip[data-dias]').forEach((b) => b.addEventListener('click', () => ponerUltimos(+b.dataset.dias)));
+// Últimos N años: del mismo día de hace N años a hoy (las listas en línea empiezan el 03/11/2010)
+function ponerAnios(n) {
+  const d = new Date(HOY + 'T12:00:00Z');
+  d.setUTCFullYear(d.getUTCFullYear() - n);
+  const desde = iso(d) < '2010-11-03' ? '2010-11-03' : iso(d);
+  $('#desde').value = desde; $('#hasta').value = HOY;
+  document.querySelectorAll('.chip[data-anios], .chip[data-dias]').forEach((c) => c.classList.toggle('chip-activo', c.dataset.anios === String(n)));
+  calcular();
+}
+document.querySelectorAll('.chip[data-anios]').forEach((b) => b.addEventListener('click', () => ponerAnios(+b.dataset.anios)));
 
 // ---------- juzgados ----------
 async function cargarJuzgados() {
@@ -33,7 +45,8 @@ async function cargarJuzgados() {
   pintarArchivo();
   $('#desde').max = $('#hasta').max = HOY;
   $('#desde').min = $('#hasta').min = '2010-11-03';
-  ponerUltimos(5);
+  // con el archivo local (búsqueda instantánea) se empieza con el último año; sin él, con el último día hábil
+  if (est && est.archivo && est.archivo.listas) ponerAnios(1); else ponerUltimos(1);
   JUZGADOS = await fetch('/api/juzgados').then((r) => r.json());
   const grupos = {};
   for (const j of JUZGADOS) (grupos[j.materia] ||= []).push(j);
