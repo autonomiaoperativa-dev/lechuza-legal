@@ -126,7 +126,10 @@ $('#form').addEventListener('submit', async (e) => {
   $('#marcaIncog').hidden = !cuerpo.incognito;
   ULTIMA = { hallazgos: [], listas: [], criterios: cuerpo, indice: null };
   controlador = new AbortController();
-  $('#btnBuscar').disabled = true;
+  BUSCANDO = true; T0 = performance.now();
+  $('#btnBuscar').disabled = true; $('#btnBuscar').textContent = 'Buscando…';
+  $('#progresoCaja').classList.remove('terminado', 'cancelado'); $('#btnCancelar').hidden = false;
+  $('#progresoTxt').textContent = 'Buscando…'; $('#barra').style.width = '0%';
   $('#vacio').hidden = true; $('#progresoCaja').hidden = false; $('#kpis').hidden = false; $('#resCaja').hidden = false;
   pintar(0);
   try {
@@ -144,14 +147,30 @@ $('#form').addEventListener('submit', async (e) => {
         if (m.tipo === 'lista') { ULTIMA.listas.push(m); ULTIMA.hallazgos.push(...m.hallazgos); pintarPronto(total); }
       }
     }
+    // terminado: se cancela cualquier redibujado pendiente para que no vuelva a decir "descargando…"
+    BUSCANDO = false;
+    if (temporizador) { clearTimeout(temporizador); temporizador = null; }
     pintar(total);
     const ix = ULTIMA.indice;
-    $('#progresoTxt').textContent = `Listo: ${(ULTIMA.listas.length + (ix ? ix.listas : 0)).toLocaleString('es-MX')} listas revisadas` + (ix ? ` (${ix.listas.toLocaleString('es-MX')} en el archivo local, en ${(ix.ms / 1000).toFixed(1)} s)` : '') + (ix && ix.recortado ? '. Hay demasiadas coincidencias: se muestran las primeras 3,000.' : '.');
+    const revisadas = ULTIMA.listas.length + (ix ? ix.listas : 0);
+    const seg = ((performance.now() - T0) / 1000).toFixed(1);
+    const partes = [];
+    if (ix) partes.push(`${ix.listas.toLocaleString('es-MX')} del archivo local`);
+    if (ULTIMA.listas.length) partes.push(`${ULTIMA.listas.length.toLocaleString('es-MX')} descargada${ULTIMA.listas.length > 1 ? 's' : ''} ahora`);
+    $('#progresoTxt').textContent = `✓ Búsqueda terminada: ${revisadas.toLocaleString('es-MX')} listas revisadas` +
+      (partes.length > 1 ? ` (${partes.join(' + ')})` : '') + ` en ${seg} s · ${ULTIMA.hallazgos.length.toLocaleString('es-MX')} coincidencia${ULTIMA.hallazgos.length === 1 ? '' : 's'}.` +
+      (ix && ix.recortado ? ' Hay demasiadas coincidencias: se muestran las primeras 3,000.' : '');
+    $('#barra').style.width = '100%';
+    $('#progresoCaja').classList.add('terminado'); $('#btnCancelar').hidden = true;
     if (window.alTerminarBusqueda) window.alTerminarBusqueda();
   } catch (err) {
-    if (err.name === 'AbortError') $('#progresoTxt').textContent = 'Búsqueda cancelada.';
-    else { $('#error').textContent = err.message; $('#progresoCaja').hidden = true; if (!ULTIMA.listas.length) { $('#kpis').hidden = true; $('#resCaja').hidden = true; $('#vacio').hidden = false; } }
-  } finally { $('#btnBuscar').disabled = false; controlador = null; }
+    BUSCANDO = false;
+    if (temporizador) { clearTimeout(temporizador); temporizador = null; }
+    if (err.name === 'AbortError') {
+      $('#progresoTxt').textContent = `Búsqueda cancelada: se alcanzaron a revisar ${(ULTIMA.listas.length + (ULTIMA.indice ? ULTIMA.indice.listas : 0)).toLocaleString('es-MX')} listas.`;
+      $('#progresoCaja').classList.add('cancelado'); $('#btnCancelar').hidden = true;
+    } else { $('#error').textContent = err.message; $('#progresoCaja').hidden = true; if (!ULTIMA.listas.length) { $('#kpis').hidden = true; $('#resCaja').hidden = true; $('#vacio').hidden = false; } }
+  } finally { $('#btnBuscar').disabled = false; $('#btnBuscar').textContent = 'Buscar'; controlador = null; }
 });
 $('#btnCancelar').addEventListener('click', () => controlador && controlador.abort());
 
@@ -178,7 +197,7 @@ function resaltar(texto, motivos) {
   }
   return h;
 }
-let temporizador = null;
+let temporizador = null, BUSCANDO = false, T0 = 0;
 function pintarPronto(total) {
   // en búsquedas de cientos de listas se redibuja como máximo 3 veces por segundo
   if (temporizador) return;
@@ -192,8 +211,14 @@ function pintar(total) {
   $('#kSin').textContent = (L.filter((l) => l.estado === 'sin_lista').length + IX.sin_lista).toLocaleString('es-MX');
   $('#kErr').textContent = L.filter((l) => l.estado === 'error').length;
   $('#kHall').textContent = H.length;
-  if (total) { $('#barra').style.width = Math.round(100 * L.length / total) + '%'; $('#progresoTxt').textContent = `Descargando ${L.length} de ${total} listas que faltan…`; }
-  else if (ULTIMA.indice) $('#barra').style.width = '100%';
+  if (BUSCANDO) {
+    const ixN = ULTIMA.indice ? ULTIMA.indice.listas : 0;
+    if (total) {
+      $('#barra').style.width = Math.round(100 * L.length / total) + '%';
+      $('#progresoTxt').textContent = (ixN ? `${ixN.toLocaleString('es-MX')} listas revisadas en el archivo local. ` : '') +
+        `Descargando del sitio oficial las que faltan: ${L.length.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')}…`;
+    } else if (ULTIMA.indice) $('#barra').style.width = '100%';
+  }
   pintarFichas(H);
   $('#resultados').innerHTML = H.length ? H.map((h) => `
     <div class="hall">
